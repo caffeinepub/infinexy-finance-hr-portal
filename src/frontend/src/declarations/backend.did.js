@@ -101,6 +101,7 @@ export const idlService = IDL.Service({
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
   'deleteEmployeeRecord' : IDL.Func([IDL.Text], [], []),
   'getAllEmployeeRecords' : IDL.Func([], [IDL.Vec(EmployeeRecord)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
@@ -145,6 +146,7 @@ export const idlService = IDL.Service({
       [EmployeeRecord],
       [],
     ),
+  'verifyAdminLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -243,6 +245,7 @@ export const idlFactory = ({ IDL }) => {
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'changeAdminPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
     'deleteEmployeeRecord' : IDL.Func([IDL.Text], [], []),
     'getAllEmployeeRecords' : IDL.Func(
         [],
@@ -291,6 +294,7 @@ export const idlFactory = ({ IDL }) => {
         [EmployeeRecord],
         [],
       ),
+    'verifyAdminLogin' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
   });
 };
 

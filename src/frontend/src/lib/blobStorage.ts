@@ -1,27 +1,11 @@
-import { HttpAgent } from "@icp-sdk/core/agent";
 import type { backendInterface } from "../backend";
-import { loadConfig } from "../config";
 import { createActorWithConfig } from "../config";
-import { StorageClient } from "../utils/StorageClient";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const CHUNK_SIZE = 900 * 1024; // 900KB chunks (safely under 2MB ICP ingress limit)
+const CHUNKS_PREFIX = "chunks:";
 
-let storageClientCache: StorageClient | null = null;
 let actorCache: backendInterface | null = null;
-
-async function getStorageClient(): Promise<StorageClient> {
-  if (storageClientCache) return storageClientCache;
-  const config = await loadConfig();
-  const agent = new HttpAgent({ host: config.backend_host });
-  storageClientCache = new StorageClient(
-    config.bucket_name,
-    config.storage_gateway_url,
-    config.backend_canister_id,
-    config.project_id,
-    agent,
-  );
-  return storageClientCache;
-}
 
 async function getActor(): Promise<backendInterface> {
   if (actorCache) return actorCache;
@@ -38,16 +22,35 @@ export async function uploadFile(
       `File "${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Maximum size is 10 MB. Please compress the file and try again.`,
     );
   }
-  onProgress?.(10);
-  const storageClient = await getStorageClient();
+
+  const actor = await getActor();
   const bytes = new Uint8Array(await file.arrayBuffer());
-  onProgress?.(30);
-  const { hash } = await storageClient.putFile(bytes, (pct) => {
-    // map 30–95% to the storage upload progress
-    onProgress?.(30 + Math.round(pct * 0.65));
-  });
+
+  onProgress?.(5);
+
+  // Split into chunks
+  const chunks: Uint8Array[] = [];
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    chunks.push(bytes.slice(i, i + CHUNK_SIZE));
+  }
+  // Always at least one chunk (empty file)
+  if (chunks.length === 0) chunks.push(new Uint8Array(0));
+
+  const chunkIds: string[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const id = await actor.storeDocument(chunks[i], `${file.name}.chunk${i}`);
+    chunkIds.push(id);
+    onProgress?.(5 + Math.round(((i + 1) / chunks.length) * 90));
+  }
+
   onProgress?.(100);
-  return hash;
+
+  // Single chunk: return plain ID for backward compatibility
+  if (chunkIds.length === 1) {
+    return chunkIds[0];
+  }
+
+  return CHUNKS_PREFIX + JSON.stringify(chunkIds);
 }
 
 const urlCache = new Map<string, string>();
@@ -55,16 +58,43 @@ const urlCache = new Map<string, string>();
 export async function getFileURL(fileId: string): Promise<string> {
   if (urlCache.has(fileId)) return urlCache.get(fileId)!;
 
-  // New-style IDs: sha256 hashes from external blob storage
-  if (fileId.startsWith("sha256:")) {
-    const storageClient = await getStorageClient();
-    const url = await storageClient.getDirectURL(fileId);
+  const actor = await getActor();
+
+  // New chunked multi-part files
+  if (fileId.startsWith(CHUNKS_PREFIX)) {
+    const chunkIds = JSON.parse(fileId.slice(CHUNKS_PREFIX.length)) as string[];
+    const chunkBlobs = await Promise.all(
+      chunkIds.map(async (id) => {
+        const result = await actor.getDocumentBlob(id);
+        if (!result) throw new Error(`Chunk ${id} not found`);
+        const bytes = result as unknown as Uint8Array;
+        const copy = new Uint8Array(bytes.length);
+        copy.set(bytes);
+        return copy;
+      }),
+    );
+    // Concatenate all chunks
+    const totalLength = chunkBlobs.reduce((sum, c) => sum + c.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunkBlobs) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    const blob = new Blob([combined.buffer]);
+    const url = URL.createObjectURL(blob);
     urlCache.set(fileId, url);
     return url;
   }
 
-  // Legacy IDs: doc_X from direct canister storage
-  const actor = await getActor();
+  // Legacy: sha256 hashes from old blob storage (unlikely to be needed)
+  if (fileId.startsWith("sha256:")) {
+    throw new Error(
+      "Legacy blob storage URLs are no longer supported. Please re-upload the file.",
+    );
+  }
+
+  // Direct canister doc_X ID (single chunk or legacy)
   const result = await actor.getDocumentBlob(fileId);
   if (!result) throw new Error("Document not found");
   const bytes = result as unknown as Uint8Array;

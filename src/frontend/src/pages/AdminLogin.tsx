@@ -19,8 +19,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    await new Promise((r) => setTimeout(r, 300));
-    const ok = login(username, password);
+    const ok = await login(username, password);
     setLoading(false);
     if (ok) {
       router.navigate({ to: "/admin/dashboard" });
@@ -122,7 +121,7 @@ export default function AdminLogin() {
                 disabled={loading}
                 data-ocid="login.primary_button"
               >
-                {loading ? "Logging in..." : "Login"}
+                {loading ? "Verifying..." : "Login"}
               </Button>
             </form>
           </CardContent>

@@ -1,30 +1,31 @@
-const ADMIN_CREDS_KEY = "infinexy_admin_creds";
+import { createActorWithConfig } from "../config";
+
 const AUTH_TOKEN_KEY = "infinexy_admin_auth";
 const ADMIN_EXTRAS_KEY = "infinexy_admin_extras";
-
-export interface AdminCredentials {
-  username: string;
-  passwordHash: string;
-}
 
 export interface EmployeeExtras {
   dateOfJoining?: string;
   dateOfLeaving?: string;
 }
 
-export function getAdminCredentials(): AdminCredentials {
-  const stored = localStorage.getItem(ADMIN_CREDS_KEY);
-  if (stored) return JSON.parse(stored) as AdminCredentials;
-  return { username: "admin", passwordHash: btoa("admin123") };
-}
-
-export function login(username: string, password: string): boolean {
-  const creds = getAdminCredentials();
-  if (username === creds.username && btoa(password) === creds.passwordHash) {
-    localStorage.setItem(AUTH_TOKEN_KEY, "true");
-    return true;
+// Login now verifies credentials against the backend canister
+// so the same username/password works on any device
+export async function login(
+  username: string,
+  password: string,
+): Promise<boolean> {
+  try {
+    const actor = await createActorWithConfig();
+    const passwordHash = btoa(password);
+    const valid = await actor.verifyAdminLogin(username, passwordHash);
+    if (valid) {
+      localStorage.setItem(AUTH_TOKEN_KEY, "true");
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
   }
-  return false;
 }
 
 export function logout(): void {
@@ -35,20 +36,19 @@ export function isAuthenticated(): boolean {
   return localStorage.getItem(AUTH_TOKEN_KEY) === "true";
 }
 
-export function changePassword(
+// Change password updates credentials in the canister so all devices pick up the new password
+export async function changePassword(
   currentPassword: string,
   newPassword: string,
-): boolean {
-  const creds = getAdminCredentials();
-  if (btoa(currentPassword) !== creds.passwordHash) return false;
-  localStorage.setItem(
-    ADMIN_CREDS_KEY,
-    JSON.stringify({
-      username: creds.username,
-      passwordHash: btoa(newPassword),
-    }),
-  );
-  return true;
+): Promise<boolean> {
+  try {
+    const actor = await createActorWithConfig();
+    const oldHash = btoa(currentPassword);
+    const newHash = btoa(newPassword);
+    return await actor.changeAdminPassword(oldHash, newHash);
+  } catch {
+    return false;
+  }
 }
 
 export function getEmployeeExtras(employeeId: string): EmployeeExtras {

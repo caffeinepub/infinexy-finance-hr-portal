@@ -81,6 +81,7 @@ export default function AdminDashboard() {
     confirm: "",
   });
   const [passportURL, setPassportURL] = useState<string | null>(null);
+  const [pwdLoading, setPwdLoading] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated()) router.navigate({ to: "/admin/login" });
@@ -152,12 +153,14 @@ export default function AdminDashboard() {
     updateMutation.mutate({ ...selectedEmployee, status: editStatus });
   };
 
-  const handleChangePwd = () => {
+  const handleChangePwd = async () => {
     if (pwdForm.newPwd !== pwdForm.confirm) {
       toast.error("New passwords do not match.");
       return;
     }
-    const ok = changePassword(pwdForm.current, pwdForm.newPwd);
+    setPwdLoading(true);
+    const ok = await changePassword(pwdForm.current, pwdForm.newPwd);
+    setPwdLoading(false);
     if (ok) {
       toast.success("Password changed successfully.");
       setChangePwdOpen(false);
@@ -750,10 +753,11 @@ export default function AdminDashboard() {
             </Button>
             <Button
               onClick={handleChangePwd}
+              disabled={pwdLoading}
               style={{ background: "#1a2c6b", color: "white" }}
               data-ocid="changepassword.save_button"
             >
-              Change Password
+              {pwdLoading ? "Saving..." : "Change Password"}
             </Button>
           </DialogFooter>
         </DialogContent>

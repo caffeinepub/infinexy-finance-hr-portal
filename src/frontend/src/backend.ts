@@ -179,6 +179,8 @@ export interface backendInterface {
     storeDocument(data: Uint8Array, fileName: string): Promise<string>;
     submitEmployeeRecord(record: EmployeeRecord): Promise<string>;
     updateEmployeeRecord(id: string, updatedRecord: EmployeeRecord): Promise<EmployeeRecord>;
+    verifyAdminLogin(username: string, passwordHash: string): Promise<boolean>;
+    changeAdminPassword(oldHash: string, newHash: string): Promise<boolean>;
 }
 import type { EmployeeRecord as _EmployeeRecord, EmployeeStatus as _EmployeeStatus, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -517,6 +519,34 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.updateEmployeeRecord(arg0, to_candid_EmployeeRecord_n23(this._uploadFile, this._downloadFile, arg1));
             return from_candid_EmployeeRecord_n11(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async verifyAdminLogin(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.verifyAdminLogin(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.verifyAdminLogin(arg0, arg1);
+            return result;
+        }
+    }
+    async changeAdminPassword(arg0: string, arg1: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.changeAdminPassword(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.changeAdminPassword(arg0, arg1);
+            return result;
         }
     }
 }

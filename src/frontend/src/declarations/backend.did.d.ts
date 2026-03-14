@@ -87,6 +87,7 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'changeAdminPassword' : ActorMethod<[string, string], boolean>,
   'deleteEmployeeRecord' : ActorMethod<[string], undefined>,
   'getAllEmployeeRecords' : ActorMethod<[], Array<EmployeeRecord>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
@@ -115,6 +116,7 @@ export interface _SERVICE {
     [string, EmployeeRecord],
     EmployeeRecord
   >,
+  'verifyAdminLogin' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
