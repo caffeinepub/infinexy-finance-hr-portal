@@ -24,7 +24,12 @@ const STEPS = [
   "Review & Submit",
 ];
 
-const POST_OPTIONS = ["Tele Caller", "Back Office", "Sales Executive"];
+const POST_OPTIONS = [
+  "Tele Caller",
+  "Back Office",
+  "Sales Executive",
+  "IT Developer",
+];
 const CALLING_OPTIONS = [
   "Personal Loan",
   "Jumbo Loan",

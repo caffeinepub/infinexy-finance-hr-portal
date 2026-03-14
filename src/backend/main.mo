@@ -90,8 +90,8 @@ actor {
 
   // Admin credentials stored in canister for multi-device login.
   // Default password hash is btoa("admin123") = "YWRtaW4xMjM=" (computed on the frontend)
-  var adminUsername : Text = "admin";
-  var adminPasswordHash : Text = "YWRtaW4xMjM=";
+  stable var adminUsername : Text = "admin";
+  stable var adminPasswordHash : Text = "YWRtaW4xMjM=";
 
   // Verify admin login - callable from any device
   public query func verifyAdminLogin(username : Text, passwordHash : Text) : async Bool {
