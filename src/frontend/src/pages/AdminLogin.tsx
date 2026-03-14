@@ -40,7 +40,7 @@ export default function AdminLogin() {
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1.jpeg"
+            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
             alt="Infinexy Finance"
             className="h-16 mx-auto mb-4 object-contain"
           />

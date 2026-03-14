@@ -6,20 +6,20 @@
 
 @layer base {
   :root {
-    --background: 0.94 0.04 220;
-    --foreground: 0.15 0.03 20;
+    --background: 0.96 0.005 240;
+    --foreground: 0.05 0 0;
     --card: 1 0 0;
-    --card-foreground: 0.15 0.03 20;
+    --card-foreground: 0.05 0 0;
     --popover: 1 0 0;
-    --popover-foreground: 0.15 0.03 20;
+    --popover-foreground: 0.05 0 0;
     --primary: 0.28 0.12 260;
     --primary-foreground: 0.98 0 0;
     --secondary: 0.94 0.01 60;
-    --secondary-foreground: 0.15 0.03 20;
+    --secondary-foreground: 0.05 0 0;
     --muted: 0.94 0.01 60;
-    --muted-foreground: 0.5 0.04 20;
+    --muted-foreground: 0.2 0 0;
     --accent: 0.72 0.15 75;
-    --accent-foreground: 0.15 0.03 20;
+    --accent-foreground: 0.05 0 0;
     --destructive: 0.45 0.18 25;
     --destructive-foreground: 0.98 0 0;
     --border: 0.88 0.02 30;

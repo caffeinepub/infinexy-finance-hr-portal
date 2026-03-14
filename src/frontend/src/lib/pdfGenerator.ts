@@ -60,7 +60,9 @@ export async function generateEmployeePDF(
   const fileURLs = await resolveFileURLs(employee);
 
   const [logoDataUrl, passportDataUrl, signatureDataUrl] = await Promise.all([
-    loadImageAsDataURL("/assets/uploads/Screenshot-2026-03-14-102450-2.png"),
+    loadImageAsDataURL(
+      "/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg",
+    ),
     fileURLs.passportPhoto
       ? loadImageAsDataURL(fileURLs.passportPhoto)
       : Promise.resolve(null),
@@ -114,12 +116,15 @@ export async function generateEmployeePDF(
 }
 
 function row(label: string, value: string | undefined): string {
-  return `<tr><td style="background:#f8f3f0;font-weight:600;width:35%;padding:7px 10px;border:1px solid #d1d5db;font-size:12px;">${label}</td><td style="padding:7px 10px;border:1px solid #d1d5db;font-size:12px;">${value || "\u2014"}</td></tr>`;
+  return `<tr>
+    <td style="background:#f0f4ff;font-weight:600;width:38%;padding:8px 12px;border:1px solid #d0d8f0;font-size:12px;color:#1a2c6b;">${label}</td>
+    <td style="padding:8px 12px;border:1px solid #d0d8f0;font-size:12px;color:#222;background:#fff;">${value || "&mdash;"}</td>
+  </tr>`;
 }
 
 function section(title: string, rows: string): string {
-  return `<div style="margin-bottom:18px;">
-    <div style="background:#7B1C1C;color:white;padding:7px 12px;font-weight:700;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">${title}</div>
+  return `<div style="margin-bottom:20px;">
+    <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-left:4px solid #c9a84c;">${title}</div>
     <table style="width:100%;border-collapse:collapse;">${rows}</table>
   </div>`;
 }
@@ -134,7 +139,7 @@ function buildPDFHTML(
 ): string {
   const submittedDate = e.submittedAt
     ? new Date(Number(e.submittedAt) / 1000000).toLocaleDateString("en-IN")
-    : "\u2014";
+    : "&mdash;";
 
   const docList: Array<{ key: string; label: string }> = [
     { key: "class10Cert", label: "Class 10th Certificate" },
@@ -156,9 +161,16 @@ function buildPDFHTML(
     .map(({ key, label }) => {
       const img = docImgs[key];
       if (!img) return "";
-      return `<div style="page-break-before:always;padding:20px;">
-        <div style="background:#7B1C1C;color:white;padding:7px 12px;font-weight:700;font-size:13px;margin-bottom:12px;">${label}</div>
-        <div style="text-align:center;"><img src="${img}" style="max-width:100%;max-height:700px;object-fit:contain;border:1px solid #d1d5db;" /></div>
+      return `<div style="page-break-before:always;padding:24px 28px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1a2c6b;padding-bottom:12px;margin-bottom:16px;">
+          ${logoDataUrl ? `<img src="${logoDataUrl}" style="height:50px;object-fit:contain;" />` : `<div style="font-size:18px;font-weight:800;color:#1a2c6b;">INFINEXY FINANCE</div>`}
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:#666;">Employee: ${e.fullName}</div>
+            <div style="font-size:10px;color:#666;">Document</div>
+          </div>
+        </div>
+        <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:8px 14px;font-weight:700;font-size:12px;margin-bottom:14px;letter-spacing:0.05em;border-left:4px solid #c9a84c;">${label}</div>
+        <div style="text-align:center;"><img src="${img}" style="max-width:100%;max-height:680px;object-fit:contain;border:1px solid #d0d8f0;" /></div>
       </div>`;
     })
     .join("");
@@ -170,7 +182,7 @@ function buildPDFHTML(
 <title>${e.fullName} - HR Induction Form</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: white; }
+  body { font-family: 'Arial', sans-serif; font-size: 13px; color: #1a1a1a; background: white; }
   @media print {
     .no-print { display: none; }
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -179,24 +191,44 @@ function buildPDFHTML(
 </head>
 <body>
 
-<div style="background:#7B1C1C;color:white;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;">
-  <div>
-    <div style="font-size:22px;font-weight:800;letter-spacing:0.05em;">INFINEXY FINANCE</div>
-    <div style="font-size:10px;margin-top:4px;color:#f0d0a0;">Email: infinexyfinance@gmail.com &nbsp;|&nbsp; Mo. 8460071353</div>
+<!-- Corporate Header -->
+<div style="background:#1a2c6b;padding:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      ${
+        logoDataUrl
+          ? `<img src="${logoDataUrl}" style="height:64px;object-fit:contain;background:white;padding:6px 10px;border-radius:4px;" />`
+          : `<div style="font-size:26px;font-weight:900;color:white;letter-spacing:0.04em;">INFINEXY FINANCE</div>`
+      }
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#c9a84c;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">Human Resources Division</div>
+      <div style="font-size:10px;color:#ccd6f6;">infinexyfinance@gmail.com</div>
+      <div style="font-size:10px;color:#ccd6f6;">Mo. 8460071353</div>
+    </div>
   </div>
-  ${logoDataUrl ? `<img src="${logoDataUrl}" style="height:55px;object-fit:contain;" />` : ""}
+  <div style="background:#c9a84c;height:3px;"></div>
 </div>
 
-<div style="text-align:center;padding:16px;border-bottom:2px solid #7B1C1C;">
-  <div style="font-size:18px;font-weight:800;color:#7B1C1C;letter-spacing:0.08em;">HR INDUCTION FORM</div>
-  <div style="font-size:11px;color:#666;margin-top:4px;">Submitted: ${submittedDate}</div>
+<!-- Document Title Banner -->
+<div style="background:#f7f9ff;border-bottom:1px solid #d0d8f0;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;">
+  <div>
+    <div style="font-size:18px;font-weight:800;color:#1a2c6b;letter-spacing:0.08em;text-transform:uppercase;">HR Induction Form</div>
+    <div style="font-size:11px;color:#888;margin-top:2px;">Official Employee Onboarding Record</div>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:10px;color:#666;">Date Submitted</div>
+    <div style="font-size:13px;font-weight:700;color:#1a2c6b;">${submittedDate}</div>
+  </div>
 </div>
 
-<div style="padding:20px;">
+<!-- Body -->
+<div style="padding:24px 28px;">
 
-<div style="margin-bottom:18px;">
-  <div style="background:#7B1C1C;color:white;padding:7px 12px;font-weight:700;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">Personal Information</div>
-  <div style="display:flex;gap:16px;margin-top:2px;">
+<!-- Personal Info Section -->
+<div style="margin-bottom:20px;">
+  <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-left:4px solid #c9a84c;">Personal Information</div>
+  <div style="display:flex;gap:16px;margin-top:1px;">
     <div style="flex:1;">
       <table style="width:100%;border-collapse:collapse;">
         ${row("Full Name", e.fullName)}
@@ -210,7 +242,14 @@ function buildPDFHTML(
         ${row("Date of Leaving", extras.dateOfLeaving)}
       </table>
     </div>
-    ${passportDataUrl ? `<div style="width:110px;flex-shrink:0;"><img src="${passportDataUrl}" style="width:110px;height:140px;object-fit:cover;border:1px solid #d1d5db;" /></div>` : "<div style='width:110px;flex-shrink:0;border:1px dashed #ccc;height:140px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#999;'>No Photo</div>"}
+    ${
+      passportDataUrl
+        ? `<div style="width:120px;flex-shrink:0;">
+           <img src="${passportDataUrl}" style="width:120px;height:150px;object-fit:cover;border:2px solid #1a2c6b;" />
+           <div style="text-align:center;font-size:9px;color:#666;margin-top:4px;">Passport Photo</div>
+         </div>`
+        : `<div style="width:120px;flex-shrink:0;border:2px dashed #c9a84c;height:150px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#999;text-align:center;">Passport<br/>Photo</div>`
+    }
   </div>
 </div>
 
@@ -235,22 +274,36 @@ ${section(
 
 ${section("KYC Details", row("Aadhaar Number", e.aadhaarNumber) + row("PAN Number", e.panNumber))}
 
-<div style="margin-bottom:18px;">
-  <div style="background:#7B1C1C;color:white;padding:7px 12px;font-weight:700;font-size:13px;letter-spacing:0.05em;text-transform:uppercase;">Declaration</div>
-  <div style="padding:10px;border:1px solid #d1d5db;font-size:12px;font-style:italic;">
+<!-- Declaration -->
+<div style="margin-bottom:20px;">
+  <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-left:4px solid #c9a84c;">Declaration</div>
+  <div style="padding:12px 14px;border:1px solid #d0d8f0;font-size:12px;font-style:italic;background:#f7f9ff;color:#333;line-height:1.6;">
     I hereby declare that the information provided above is true and correct to the best of my knowledge.
     I understand that providing false information may lead to termination of association with INFINEXY FINANCE.
   </div>
-  <table style="width:100%;border-collapse:collapse;margin-top:2px;">${row("Date", e.declarationDate)}</table>
-  ${signatureDataUrl ? `<div style="margin-top:8px;"><div style="font-size:11px;font-weight:600;margin-bottom:4px;">Signature:</div><img src="${signatureDataUrl}" style="height:60px;border:1px solid #d1d5db;padding:4px;" /></div>` : ""}
+  <table style="width:100%;border-collapse:collapse;">${row("Declaration Date", e.declarationDate)}</table>
+  ${
+    signatureDataUrl
+      ? `<div style="margin-top:10px;padding:10px 14px;border:1px solid #d0d8f0;background:#f7f9ff;">
+         <div style="font-size:11px;font-weight:700;color:#1a2c6b;margin-bottom:6px;letter-spacing:0.04em;">EMPLOYEE SIGNATURE</div>
+         <img src="${signatureDataUrl}" style="height:65px;border:1px solid #d0d8f0;padding:4px;background:white;" />
+       </div>`
+      : ""
+  }
+</div>
+
+<!-- Footer on main page -->
+<div style="border-top:2px solid #1a2c6b;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+  <div style="font-size:9px;color:#888;">This is a confidential HR document. Unauthorized disclosure is prohibited.</div>
+  <div style="font-size:9px;color:#888;">Infinexy Finance &copy; ${new Date().getFullYear()}</div>
 </div>
 
 </div>
 
 ${docPages}
 
-<div class="no-print" style="text-align:center;padding:20px;">
-  <button onclick="window.print()" style="background:#7B1C1C;color:white;padding:10px 28px;border:none;border-radius:4px;font-size:14px;cursor:pointer;">Print / Save as PDF</button>
+<div class="no-print" style="text-align:center;padding:20px;background:#f7f9ff;border-top:1px solid #d0d8f0;">
+  <button onclick="window.print()" style="background:#1a2c6b;color:white;padding:10px 32px;border:none;border-radius:4px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0.04em;">Print / Save as PDF</button>
 </div>
 
 </body>

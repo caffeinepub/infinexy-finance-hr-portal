@@ -91,6 +91,7 @@ export interface _SERVICE {
   'getAllEmployeeRecords' : ActorMethod<[], Array<EmployeeRecord>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
+  'getDocumentBlob' : ActorMethod<[string], [] | [Uint8Array]>,
   'getEmployeeCountByStatus' : ActorMethod<[string], bigint>,
   'getEmployeeRecord' : ActorMethod<[string], [] | [EmployeeRecord]>,
   'getEmployeeRecordsByIdPattern' : ActorMethod<
@@ -108,6 +109,7 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'storeDocument' : ActorMethod<[Uint8Array, string], string>,
   'submitEmployeeRecord' : ActorMethod<[EmployeeRecord], string>,
   'updateEmployeeRecord' : ActorMethod<
     [string, EmployeeRecord],

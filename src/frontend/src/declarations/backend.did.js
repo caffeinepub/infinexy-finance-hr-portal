@@ -105,6 +105,11 @@ export const idlService = IDL.Service({
   'getAllEmployeeRecords' : IDL.Func([], [IDL.Vec(EmployeeRecord)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getDocumentBlob' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(IDL.Vec(IDL.Nat8))],
+      ['query'],
+    ),
   'getEmployeeCountByStatus' : IDL.Func([IDL.Text], [IDL.Nat], []),
   'getEmployeeRecord' : IDL.Func(
       [IDL.Text],
@@ -133,6 +138,7 @@ export const idlService = IDL.Service({
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'storeDocument' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [IDL.Text], []),
   'submitEmployeeRecord' : IDL.Func([EmployeeRecord], [IDL.Text], []),
   'updateEmployeeRecord' : IDL.Func(
       [IDL.Text, EmployeeRecord],
@@ -245,6 +251,11 @@ export const idlFactory = ({ IDL }) => {
       ),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getDocumentBlob' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(IDL.Vec(IDL.Nat8))],
+        ['query'],
+      ),
     'getEmployeeCountByStatus' : IDL.Func([IDL.Text], [IDL.Nat], []),
     'getEmployeeRecord' : IDL.Func(
         [IDL.Text],
@@ -273,6 +284,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'storeDocument' : IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [IDL.Text], []),
     'submitEmployeeRecord' : IDL.Func([EmployeeRecord], [IDL.Text], []),
     'updateEmployeeRecord' : IDL.Func(
         [IDL.Text, EmployeeRecord],

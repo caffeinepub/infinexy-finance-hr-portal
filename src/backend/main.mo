@@ -5,7 +5,6 @@ import Time "mo:core/Time";
 import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
 import Blob "mo:core/Blob";
 import Principal "mo:core/Principal";
 import Storage "blob-storage/Storage";
@@ -14,7 +13,6 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 actor {
-  // Initialize the access control system
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
   include MixinStorage();
@@ -80,18 +78,15 @@ actor {
     status : EmployeeStatus;
   };
 
-  module EmployeeRecord {
-    public func compareByStatus(record1 : EmployeeRecord, record2 : EmployeeRecord) : Order.Order {
-      EmployeeStatus.compare(record1.status, record2.status);
-    };
-  };
-
-  public type UserProfile = {
+  type UserProfile = {
     name : Text;
   };
 
   let employeeRecords = Map.empty<Text, EmployeeRecord>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let documentStore = Map.empty<Text, Blob>();
+  let documentNames = Map.empty<Text, Text>();
+  var documentIdCounter : Nat = 0;
 
   // User profile functions required by the instructions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -115,59 +110,49 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Public endpoint - no authentication required as per specification
-  public shared ({ caller }) func submitEmployeeRecord(record : EmployeeRecord) : async Text {
+  // Open to all - employees don't need to log in
+  public shared func submitEmployeeRecord(record : EmployeeRecord) : async Text {
     if (employeeRecords.containsKey(record.id)) {
       Runtime.trap("Employee record with this ID already exists");
     };
-
     employeeRecords.add(record.id, record);
     record.id;
   };
 
-  // Admin-only endpoint
-  public query ({ caller }) func getEmployeeRecord(id : Text) : async ?EmployeeRecord {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view employee records");
-    };
+  // No principal auth - admin auth is handled via frontend username/password session
+  public query func getEmployeeRecord(id : Text) : async ?EmployeeRecord {
     employeeRecords.get(id);
   };
 
-  // Admin-only endpoint
-  public query ({ caller }) func getAllEmployeeRecords() : async [EmployeeRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view employee records");
-    };
+  public query func getAllEmployeeRecords() : async [EmployeeRecord] {
     employeeRecords.values().toArray();
   };
 
-  // Admin-only endpoint
-  public query ({ caller }) func getEmployeeRecordsByStatus(status : EmployeeStatus) : async [EmployeeRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view employee records");
-    };
+  public query func getEmployeeRecordsByStatus(status : EmployeeStatus) : async [EmployeeRecord] {
     employeeRecords.values().toArray().filter(
       func(record) { record.status == status }
     );
   };
 
-  // Admin-only endpoint
-  public query ({ caller }) func getEmployeeRecordsByStatusSorted(status : EmployeeStatus) : async [EmployeeRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view employee records");
-    };
+  public query func getEmployeeRecordsByStatusSorted(status : EmployeeStatus) : async [EmployeeRecord] {
     employeeRecords.values().toArray().filter(
       func(record) { record.status == status }
     ).sort(
-      EmployeeRecord.compareByStatus
+      func(record1, record2) {
+        switch (record1.status, record2.status) {
+          case (#pending, #pending) { #equal };
+          case (#pending, _) { #less };
+          case (#active, #pending) { #greater };
+          case (#active, #active) { #equal };
+          case (#active, #inactive) { #less };
+          case (#inactive, #inactive) { #equal };
+          case (#inactive, _) { #greater };
+        };
+      }
     );
   };
 
-  // Admin-only endpoint
-  public shared ({ caller }) func updateEmployeeRecord(id : Text, updatedRecord : EmployeeRecord) : async EmployeeRecord {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can update employee records");
-    };
+  public shared func updateEmployeeRecord(id : Text, updatedRecord : EmployeeRecord) : async EmployeeRecord {
     switch (employeeRecords.get(id)) {
       case (null) { Runtime.trap("Employee record not found") };
       case (?_) {
@@ -177,22 +162,14 @@ actor {
     };
   };
 
-  // Admin-only endpoint
-  public shared ({ caller }) func deleteEmployeeRecord(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete employee records");
-    };
+  public shared func deleteEmployeeRecord(id : Text) : async () {
     if (not employeeRecords.containsKey(id)) {
       Runtime.trap("Employee record not found");
     };
     employeeRecords.remove(id);
   };
 
-  // Admin-only endpoint
-  public shared ({ caller }) func getEmployeeCountByStatus(status : Text) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view employee statistics");
-    };
+  public shared func getEmployeeCountByStatus(status : Text) : async Nat {
     let statusEnum : EmployeeStatus =
       switch (status) {
       case ("pending") { #pending };
@@ -206,13 +183,22 @@ actor {
     ).size();
   };
 
-  // Admin-only endpoint
-  public shared ({ caller }) func getEmployeeRecordsByIdPattern(pattern : Text) : async [EmployeeRecord] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can search employee records");
-    };
+  public shared func getEmployeeRecordsByIdPattern(pattern : Text) : async [EmployeeRecord] {
     employeeRecords.entries().toArray().filter(
       func((id, _)) { id.contains(#text pattern) }
     ).map(func((_, record)) { record });
+  };
+
+  // Open to all - employees don't need to log in to upload documents
+  public shared func storeDocument(data : Blob, fileName : Text) : async Text {
+    let id = "doc_" # documentIdCounter.toText();
+    documentStore.add(id, data);
+    documentNames.add(id, fileName);
+    documentIdCounter += 1;
+    id;
+  };
+
+  public query func getDocumentBlob(id : Text) : async ?Blob {
+    documentStore.get(id);
   };
 };

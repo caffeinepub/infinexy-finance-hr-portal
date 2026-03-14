@@ -32,14 +32,27 @@ export default function FileUpload({
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Client-side size check (10 MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError(
+        `File too large (${(file.size / 1024 / 1024).toFixed(1)} MB). Max size: 10 MB. Please compress and retry.`,
+      );
+      // Reset input so the same file can be re-selected after compression
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     setUploading(true);
     setError(null);
     setProgress(0);
     try {
-      const hash = await uploadFile(file, setProgress);
-      onUploaded(hash, file.name);
+      const id = await uploadFile(file, setProgress);
+      onUploaded(id, file.name);
     } catch (err) {
-      setError("Upload failed. Please try again.");
+      const msg =
+        err instanceof Error ? err.message : "Upload failed. Please try again.";
+      setError(msg);
       console.error(err);
     } finally {
       setUploading(false);
@@ -57,6 +70,7 @@ export default function FileUpload({
           </span>
         )}
       </span>
+      <div className="text-xs text-muted-foreground">Max file size: 10 MB</div>
       <div className="flex items-center gap-3 flex-wrap">
         <Button
           type="button"

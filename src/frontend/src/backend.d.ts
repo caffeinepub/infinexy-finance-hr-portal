@@ -67,6 +67,7 @@ export interface backendInterface {
     getAllEmployeeRecords(): Promise<Array<EmployeeRecord>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getDocumentBlob(id: string): Promise<Uint8Array | null>;
     getEmployeeCountByStatus(status: string): Promise<bigint>;
     getEmployeeRecord(id: string): Promise<EmployeeRecord | null>;
     getEmployeeRecordsByIdPattern(pattern: string): Promise<Array<EmployeeRecord>>;
@@ -75,6 +76,7 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    storeDocument(data: Uint8Array, fileName: string): Promise<string>;
     submitEmployeeRecord(record: EmployeeRecord): Promise<string>;
     updateEmployeeRecord(id: string, updatedRecord: EmployeeRecord): Promise<EmployeeRecord>;
 }

@@ -247,7 +247,7 @@ export default function InductionForm() {
     setSubmitting(true);
     try {
       await actor.submitEmployeeRecord({
-        id: "",
+        id: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         fullName: fd.fullName,
         dateOfBirth: fd.dateOfBirth,
         gender: fd.gender,
@@ -298,10 +298,7 @@ export default function InductionForm() {
 
   if (submitted) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "#f8f3f0" }}
-      >
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="max-w-md text-center bg-white rounded-xl shadow-lg p-10">
           <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
           <h2
@@ -323,24 +320,24 @@ export default function InductionForm() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: "#f5f0ed" }}>
+    <div className="min-h-screen bg-background">
       <Toaster />
       {/* Header */}
       <header className="maroon-header shadow-md">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <div
-              className="text-xl font-bold text-white"
+              className="text-xl font-bold text-black"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
               HR INDUCTION FORM
             </div>
-            <div className="text-amber-200 text-xs mt-0.5">
+            <div className="text-black text-xs mt-0.5">
               Email: infinexyfinance@gmail.com | Mo. 8460071353
             </div>
           </div>
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1.jpeg"
+            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
             alt="Infinexy Finance"
             className="h-12 object-contain"
           />

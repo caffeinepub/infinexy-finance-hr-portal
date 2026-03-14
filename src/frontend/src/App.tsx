@@ -9,6 +9,7 @@ import {
 import { isAuthenticated } from "./lib/adminAuth";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
+import HomePage from "./pages/HomePage";
 import InductionForm from "./pages/InductionForm";
 
 const queryClient = new QueryClient();
@@ -18,6 +19,12 @@ const rootRoute = createRootRoute();
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
+  component: HomePage,
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/register",
   component: InductionForm,
 });
 
@@ -41,6 +48,7 @@ const adminDashboardRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  registerRoute,
   adminLoginRoute,
   adminDashboardRoute,
 ]);
