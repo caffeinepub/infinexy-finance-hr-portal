@@ -19,12 +19,14 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const ok = await login(username, password);
+    const result = await login(username, password);
     setLoading(false);
-    if (ok) {
+    if (result === "ok") {
       router.navigate({ to: "/admin/dashboard" });
-    } else {
+    } else if (result === "invalid") {
       setError("Invalid username or password.");
+    } else {
+      setError("Could not connect to server. Please try again.");
     }
   };
 
@@ -88,7 +90,7 @@ export default function AdminLogin() {
                     placeholder="Enter password"
                     required
                     className="pr-10"
-                    data-ocid="login.input"
+                    data-ocid="login.password_input"
                   />
                   <button
                     type="button"
@@ -121,7 +123,7 @@ export default function AdminLogin() {
                 disabled={loading}
                 data-ocid="login.primary_button"
               >
-                {loading ? "Verifying..." : "Login"}
+                {loading ? "Verifying... (may take a moment)" : "Login"}
               </Button>
             </form>
           </CardContent>

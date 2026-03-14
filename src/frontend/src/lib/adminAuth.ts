@@ -8,24 +8,30 @@ export interface EmployeeExtras {
   dateOfLeaving?: string;
 }
 
-// Login verifies credentials against the backend canister only.
-// No hardcoded fallback -- password changes take effect immediately on all devices.
+// Returns: "ok" | "invalid" | "error"
 export async function login(
   username: string,
   password: string,
-): Promise<boolean> {
+): Promise<"ok" | "invalid" | "error"> {
   const passwordHash = btoa(password);
-  try {
-    const actor = await createActorWithConfig();
-    const valid = await actor.verifyAdminLogin(username, passwordHash);
-    if (valid) {
-      localStorage.setItem(AUTH_TOKEN_KEY, "true");
-      return true;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const actor = await createActorWithConfig();
+      const valid = await actor.verifyAdminLogin(username, passwordHash);
+      if (valid) {
+        localStorage.setItem(AUTH_TOKEN_KEY, "true");
+        return "ok";
+      }
+      return "invalid";
+    } catch (err) {
+      lastError = err;
+      // Wait briefly before retrying
+      await new Promise((r) => setTimeout(r, 1000));
     }
-    return false;
-  } catch {
-    return false;
   }
+  console.error("Admin login canister error:", lastError);
+  return "error";
 }
 
 export function logout(): void {

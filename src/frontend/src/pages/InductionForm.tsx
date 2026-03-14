@@ -29,6 +29,9 @@ const POST_OPTIONS = [
   "Back Office",
   "Sales Executive",
   "IT Developer",
+  "HR (Human Resource)",
+  "Accountant",
+  "Other",
 ];
 const CALLING_OPTIONS = [
   "Personal Loan",
