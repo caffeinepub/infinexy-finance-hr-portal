@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.94 0.04 220;
+    --foreground: 0.15 0.03 20;
+    --card: 1 0 0;
+    --card-foreground: 0.15 0.03 20;
+    --popover: 1 0 0;
+    --popover-foreground: 0.15 0.03 20;
+    --primary: 0.28 0.12 260;
+    --primary-foreground: 0.98 0 0;
+    --secondary: 0.94 0.01 60;
+    --secondary-foreground: 0.15 0.03 20;
+    --muted: 0.94 0.01 60;
+    --muted-foreground: 0.5 0.04 20;
+    --accent: 0.72 0.15 75;
+    --accent-foreground: 0.15 0.03 20;
+    --destructive: 0.45 0.18 25;
+    --destructive-foreground: 0.98 0 0;
+    --border: 0.88 0.02 30;
+    --input: 0.88 0.02 30;
+    --ring: 0.28 0.12 260;
+    --radius: 0.5rem;
+    --chart-1: 0.28 0.12 260;
+    --chart-2: 0.72 0.15 75;
+    --chart-3: 0.55 0.12 200;
+    --chart-4: 0.65 0.15 145;
+    --chart-5: 0.75 0.1 60;
+    --sidebar: 0.28 0.12 260;
+    --sidebar-foreground: 0.98 0 0;
+    --sidebar-primary: 0.72 0.15 75;
+    --sidebar-primary-foreground: 0.15 0.03 20;
+    --sidebar-accent: 0.25 0.1 20;
+    --sidebar-accent-foreground: 0.98 0 0;
+    --sidebar-border: 0.25 0.1 20;
+    --sidebar-ring: 0.72 0.15 75;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: "Playfair Display", serif;
+  }
+}
+
+.maroon-header {
+  background-color: #1a2c6b;
+  color: white;
+}
+
+.gold-accent {
+  color: #c9a84c;
+}
+
+.section-header {
+  background-color: #1a2c6b;
+  color: white;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.form-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.form-table td,
+.form-table th {
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.signature-canvas {
+  border: 2px solid #1a2c6b;
+  border-radius: 4px;
+  cursor: crosshair;
+  touch-action: none;
+  background: #fff;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.step-active {
+  background-color: #1a2c6b;
+  color: white;
+}
+
+.step-completed {
+  background-color: #c9a84c;
+  color: white;
+}
+
+.step-inactive {
+  background-color: #e5e7eb;
+  color: #6b7280;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}
