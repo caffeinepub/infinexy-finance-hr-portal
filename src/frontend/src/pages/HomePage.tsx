@@ -9,17 +9,19 @@ export default function HomePage() {
       <header className="flex items-center justify-between px-8 py-4 border-b border-gray-200 bg-white/80 backdrop-blur">
         <div className="flex items-center gap-3">
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
-            alt="Infinexy Logo"
+            src="/assets/uploads/infinexy-solution-logo.jpeg"
+            alt="Infinexy Solution Logo"
             className="h-12 w-12 object-contain rounded"
           />
-          <span className="text-lg font-semibold text-[#1a2c6b]">Infinexy</span>
+          <span className="text-lg font-semibold text-[#1a2c6b]">
+            Infinexy Solution
+          </span>
         </div>
         <button
           type="button"
           data-ocid="header.admin_portal.button"
           onClick={() => navigate({ to: "/admin/login" })}
-          className="px-5 py-2 rounded-lg border border-gray-300 text-[#1a2c6b] bg-white hover:bg-gray-50 font-medium text-sm transition"
+          className="px-5 py-2 rounded-lg border border-[#1a2c6b] text-[#1a2c6b] bg-white hover:bg-gray-50 font-medium text-sm transition"
         >
           Admin Portal
         </button>
@@ -36,7 +38,7 @@ export default function HomePage() {
           Infinexy
         </h1>
         <h2 className="text-4xl md:text-5xl font-bold text-blue-300 leading-tight mb-6">
-          Finance
+          Solution
         </h2>
 
         <p className="text-gray-600 text-lg mb-3">

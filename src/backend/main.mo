@@ -133,9 +133,7 @@ actor {
 
   // Open to all - employees don't need to log in
   public shared func submitEmployeeRecord(record : EmployeeRecord) : async Text {
-    if (employeeRecords.containsKey(record.id)) {
-      Runtime.trap("Employee record with this ID already exists");
-    };
+    // Upsert: allow resubmission on retry
     employeeRecords.add(record.id, record);
     record.id;
   };

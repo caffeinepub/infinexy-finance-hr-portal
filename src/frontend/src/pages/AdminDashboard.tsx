@@ -198,8 +198,8 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <img
-              src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
-              alt="Infinexy Finance logo"
+              src="/assets/uploads/infinexy-solution-logo.jpeg"
+              alt="Infinexy Solution logo"
               className="h-10 object-contain"
             />
             <div>
@@ -207,7 +207,7 @@ export default function AdminDashboard() {
                 className="text-white font-bold text-lg"
                 style={{ fontFamily: "'Playfair Display', serif" }}
               >
-                INFINEXY FINANCE
+                INFINEXY SOLUTION
               </div>
               <div className="text-amber-200 text-xs">HR Management Portal</div>
             </div>
@@ -745,7 +745,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <img
-                  src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
+                  src="/assets/uploads/infinexy-solution-logo.jpeg"
                   alt="Infinexy"
                   className="h-12 object-contain bg-white rounded p-1"
                 />

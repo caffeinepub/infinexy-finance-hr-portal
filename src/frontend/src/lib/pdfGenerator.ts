@@ -60,9 +60,7 @@ export async function generateEmployeePDF(
   const fileURLs = await resolveFileURLs(employee);
 
   const [logoDataUrl, passportDataUrl, signatureDataUrl] = await Promise.all([
-    loadImageAsDataURL(
-      "/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg",
-    ),
+    loadImageAsDataURL("/assets/uploads/infinexy-solution-logo.jpeg"),
     fileURLs.passportPhoto
       ? loadImageAsDataURL(fileURLs.passportPhoto)
       : Promise.resolve(null),
@@ -163,7 +161,7 @@ function buildPDFHTML(
       if (!img) return "";
       return `<div style="page-break-before:always;padding:24px 28px;">
         <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1a2c6b;padding-bottom:12px;margin-bottom:16px;">
-          ${logoDataUrl ? `<img src="${logoDataUrl}" style="height:50px;object-fit:contain;" />` : `<div style="font-size:18px;font-weight:800;color:#1a2c6b;">INFINEXY FINANCE</div>`}
+          ${logoDataUrl ? `<img src="${logoDataUrl}" style="height:50px;object-fit:contain;" />` : `<div style="font-size:18px;font-weight:800;color:#1a2c6b;">INFINEXY SOLUTION</div>`}
           <div style="text-align:right;">
             <div style="font-size:10px;color:#666;">Employee: ${e.fullName}</div>
             <div style="font-size:10px;color:#666;">Document</div>
@@ -198,7 +196,7 @@ function buildPDFHTML(
       ${
         logoDataUrl
           ? `<img src="${logoDataUrl}" style="height:64px;object-fit:contain;background:white;padding:6px 10px;border-radius:4px;" />`
-          : `<div style="font-size:26px;font-weight:900;color:white;letter-spacing:0.04em;">INFINEXY FINANCE</div>`
+          : `<div style="font-size:26px;font-weight:900;color:white;letter-spacing:0.04em;">INFINEXY SOLUTION</div>`
       }
     </div>
     <div style="text-align:right;">
@@ -279,7 +277,7 @@ ${section("KYC Details", row("Aadhaar Number", e.aadhaarNumber) + row("PAN Numbe
   <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:8px 14px;font-weight:700;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;border-left:4px solid #c9a84c;">Declaration</div>
   <div style="padding:12px 14px;border:1px solid #d0d8f0;font-size:12px;font-style:italic;background:#f7f9ff;color:#333;line-height:1.6;">
     I hereby declare that the information provided above is true and correct to the best of my knowledge.
-    I understand that providing false information may lead to termination of association with INFINEXY FINANCE.
+    I understand that providing false information may lead to termination of association with INFINEXY SOLUTION.
   </div>
   <table style="width:100%;border-collapse:collapse;">${row("Declaration Date", e.declarationDate)}</table>
   ${
@@ -295,7 +293,7 @@ ${section("KYC Details", row("Aadhaar Number", e.aadhaarNumber) + row("PAN Numbe
 <!-- Footer on main page -->
 <div style="border-top:2px solid #1a2c6b;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
   <div style="font-size:9px;color:#888;">This is a confidential HR document. Unauthorized disclosure is prohibited.</div>
-  <div style="font-size:9px;color:#888;">Infinexy Finance &copy; ${new Date().getFullYear()}</div>
+  <div style="font-size:9px;color:#888;">Infinexy Solution &copy; ${new Date().getFullYear()}</div>
 </div>
 
 </div>

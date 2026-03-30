@@ -299,6 +299,16 @@ export default function InductionForm() {
         status: EmployeeStatus.pending,
         submittedAt: BigInt(Date.now()) * 1000000n,
       });
+    } catch (submitErr) {
+      console.error("submitEmployeeRecord failed:", submitErr);
+      const msg =
+        submitErr instanceof Error ? submitErr.message : String(submitErr);
+      toast.error(`Submission failed: ${msg}`);
+      setSubmitting(false);
+      return;
+    }
+    // Record acceptance letter separately — non-fatal if it fails
+    try {
       await actor.recordAcceptanceLetter(
         employeeId,
         new Date().toLocaleDateString("en-IN", {
@@ -307,14 +317,12 @@ export default function InductionForm() {
           year: "numeric",
         }),
       );
-      setSubmitted(true);
-      window.scrollTo(0, 0);
-    } catch (err) {
-      console.error(err);
-      toast.error("Submission failed. Please try again.");
-    } finally {
-      setSubmitting(false);
+    } catch (acceptErr) {
+      console.error("recordAcceptanceLetter failed (non-fatal):", acceptErr);
     }
+    setSubmitted(true);
+    setSubmitting(false);
+    window.scrollTo(0, 0);
   };
 
   if (submitted) {
@@ -358,8 +366,8 @@ export default function InductionForm() {
             </div>
           </div>
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
-            alt="Infinexy Finance"
+            src="/assets/uploads/infinexy-solution-logo.jpeg"
+            alt="Infinexy Solution"
             className="h-12 object-contain"
           />
         </div>
@@ -989,7 +997,7 @@ function Step6Declaration({
           I hereby declare that the information provided above is true and
           correct to the best of my knowledge. I understand that providing false
           information may lead to termination of association with{" "}
-          <strong>INFINEXY FINANCE</strong>.
+          <strong>INFINEXY SOLUTION</strong>.
         </p>
       </div>
       <Field label="Date">
@@ -1197,8 +1205,8 @@ function Step8AcceptanceLetter({
             </div>
           </div>
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
-            alt="Infinexy Finance"
+            src="/assets/uploads/infinexy-solution-logo.jpeg"
+            alt="Infinexy Solution"
             className="h-14 object-contain bg-white rounded-lg p-1"
           />
         </div>

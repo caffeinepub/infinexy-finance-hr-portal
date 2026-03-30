@@ -41,15 +41,15 @@ export default function AdminLogin() {
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
           <img
-            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
-            alt="Infinexy Finance"
+            src="/assets/uploads/infinexy-solution-logo.jpeg"
+            alt="Infinexy Solution"
             className="h-16 mx-auto mb-4 object-contain"
           />
           <h1
             className="text-3xl font-bold text-white"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            INFINEXY FINANCE
+            INFINEXY SOLUTION
           </h1>
           <p className="text-amber-200 text-sm mt-1">HR Management Portal</p>
         </div>
