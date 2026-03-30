@@ -116,6 +116,9 @@ export interface _SERVICE {
     [string, EmployeeRecord],
     EmployeeRecord
   >,
+  'recordAcceptanceLetter' : ActorMethod<[string, string], undefined>,
+  'getAcceptanceLetter' : ActorMethod<[string], [] | [string]>,
+  'getAllAcceptanceLetters' : ActorMethod<[], Array<[string, string]>>,
   'verifyAdminLogin' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;

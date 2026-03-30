@@ -19,7 +19,7 @@ export default function HomePage() {
           type="button"
           data-ocid="header.admin_portal.button"
           onClick={() => navigate({ to: "/admin/login" })}
-          className="px-5 py-2 rounded-lg border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 font-medium text-sm transition"
+          className="px-5 py-2 rounded-lg border border-gray-300 text-[#1a2c6b] bg-white hover:bg-gray-50 font-medium text-sm transition"
         >
           Admin Portal
         </button>

@@ -148,7 +148,7 @@ function buildPDFHTML(
     { key: "bachelor", label: "Bachelor's Degree" },
     { key: "master", label: "Master's Degree" },
     { key: "experienceCert", label: "Experience Certificate" },
-    { key: "leavingLetter", label: "Leaving Letter" },
+    { key: "leavingLetter", label: "Relieving Letter" },
     { key: "salarySlip1", label: "Salary Slip - Month 1" },
     { key: "salarySlip2", label: "Salary Slip - Month 2" },
     { key: "salarySlip3", label: "Salary Slip - Month 3" },

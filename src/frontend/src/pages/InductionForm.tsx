@@ -22,6 +22,7 @@ const STEPS = [
   "KYC",
   "Declaration",
   "Review & Submit",
+  "Acceptance Letter",
 ];
 
 const POST_OPTIONS = [
@@ -30,8 +31,10 @@ const POST_OPTIONS = [
   "Sales Executive",
   "IT Developer",
   "HR (Human Resource)",
+  "HR Manager",
   "Accountant",
-  "Other",
+  "Branch Manager",
+  "Managing Director",
 ];
 const CALLING_OPTIONS = [
   "Personal Loan",
@@ -162,6 +165,9 @@ export default function InductionForm() {
   const [submitting, setSubmitting] = useState(false);
   const [signatureEmpty, setSignatureEmpty] = useState(true);
   const [uploadingSignature, setUploadingSignature] = useState(false);
+  const [employeeId] = useState(
+    () => `emp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { actor, isFetching } = useActor();
 
@@ -187,7 +193,6 @@ export default function InductionForm() {
     }
     if (s === 2) {
       if (!fd.educationLevel.trim()) e.educationLevel = "Required";
-      if (!fd.class10FileId) e.class10FileId = "Required";
     }
     if (s === 3) {
       if (!fd.bankName.trim()) e.bankName = "Required";
@@ -255,7 +260,7 @@ export default function InductionForm() {
     setSubmitting(true);
     try {
       await actor.submitEmployeeRecord({
-        id: `emp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: employeeId,
         fullName: fd.fullName,
         dateOfBirth: fd.dateOfBirth,
         gender: fd.gender,
@@ -294,6 +299,14 @@ export default function InductionForm() {
         status: EmployeeStatus.pending,
         submittedAt: BigInt(Date.now()) * 1000000n,
       });
+      await actor.recordAcceptanceLetter(
+        employeeId,
+        new Date().toLocaleDateString("en-IN", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        }),
+      );
       setSubmitted(true);
       window.scrollTo(0, 0);
     } catch (err) {
@@ -421,15 +434,24 @@ export default function InductionForm() {
                   setStep(0);
                   window.scrollTo(0, 0);
                 }}
+              />
+            )}
+            {step === 7 && (
+              <Step8AcceptanceLetter
+                fd={fd}
                 onSubmit={handleSubmit}
                 submitting={submitting}
                 actorReady={!!actor && !isFetching}
+                onBack={() => {
+                  setStep(6);
+                  window.scrollTo(0, 0);
+                }}
               />
             )}
           </div>
 
           {/* Navigation */}
-          {step < 6 && (
+          {(step < 6 || step === 6) && (
             <div className="px-6 pb-6 flex justify-between">
               <Button
                 variant="outline"
@@ -672,7 +694,7 @@ function Step2Work({ fd, set }: { fd: FD; set: SetFn }) {
               data-ocid="work.upload_button"
             />
             <FileUpload
-              label="Upload Leaving Letter"
+              label="Upload Relieving Letter"
               fileId={fd.leavingLetterFileId}
               fileName={fd.leavingLetterName}
               onUploaded={(id, name) => {
@@ -747,7 +769,7 @@ function Step3Education({
       <div className="space-y-3">
         <FileUpload
           label="Upload Class 10th Certificate"
-          required
+          optional
           fileId={fd.class10FileId}
           fileName={fd.class10Name}
           onUploaded={(id, name) => {
@@ -756,7 +778,6 @@ function Step3Education({
           }}
           data-ocid="education.upload_button"
         />
-        {errors.class10FileId && <Err msg={errors.class10FileId} />}
         <FileUpload
           label="Upload Class 12th Certificate"
           optional
@@ -1035,15 +1056,9 @@ function FileReviewRow({
 function Step7Review({
   fd,
   onEdit,
-  onSubmit,
-  submitting,
-  actorReady,
 }: {
   fd: FD;
   onEdit: () => void;
-  onSubmit: () => void;
-  submitting: boolean;
-  actorReady: boolean;
 }) {
   return (
     <div className="space-y-4">
@@ -1091,7 +1106,10 @@ function Step7Review({
           label="Experience Certificate"
           fileName={fd.expCertName}
         />
-        <FileReviewRow label="Leaving Letter" fileName={fd.leavingLetterName} />
+        <FileReviewRow
+          label="Relieving Letter"
+          fileName={fd.leavingLetterName}
+        />
         <FileReviewRow label="Salary Slip 1" fileName={fd.slip1Name} />
         <FileReviewRow label="Salary Slip 2" fileName={fd.slip2Name} />
         <FileReviewRow label="Salary Slip 3" fileName={fd.slip3Name} />
@@ -1136,20 +1154,261 @@ function Step7Review({
           value={fd.signatureFileId ? "✓ Uploaded" : "—"}
         />
       </ReviewSection>
+    </div>
+  );
+}
 
-      <div className="flex justify-end pt-2">
+function Step8AcceptanceLetter({
+  fd,
+  onSubmit,
+  submitting,
+  actorReady,
+  onBack,
+}: {
+  fd: FD;
+  onSubmit: () => void;
+  submitting: boolean;
+  actorReady: boolean;
+  onBack: () => void;
+}) {
+  const [accepted, setAccepted] = useState(false);
+
+  return (
+    <div className="space-y-6">
+      {/* Letter */}
+      <div
+        className="border rounded-xl overflow-hidden shadow-sm"
+        style={{ fontFamily: "'Times New Roman', serif" }}
+      >
+        {/* Letter Header */}
+        <div
+          className="px-8 py-5 flex items-center justify-between"
+          style={{ background: "#1a2c6b" }}
+        >
+          <div>
+            <div
+              className="text-2xl font-bold text-white tracking-wide"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              INFINEXY SOLUTION
+            </div>
+            <div className="text-xs text-white/70 mt-0.5">
+              Employment Terms &amp; Performance Agreement
+            </div>
+          </div>
+          <img
+            src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
+            alt="Infinexy Finance"
+            className="h-14 object-contain bg-white rounded-lg p-1"
+          />
+        </div>
+        <div className="h-1" style={{ background: "#c9a84c" }} />
+
+        {/* Letter Body */}
+        <div className="px-8 py-6 bg-white space-y-4 text-[15px] leading-relaxed text-gray-800">
+          <div className="text-center mb-2">
+            <div
+              className="text-xl font-bold uppercase tracking-wider"
+              style={{ color: "#1a2c6b" }}
+            >
+              EMPLOYMENT TERMS &amp; PERFORMANCE AGREEMENT
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm border-b pb-4 mb-2">
+            <div>
+              <span className="font-semibold">Date:</span>{" "}
+              {new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </div>
+            <div>
+              <span className="font-semibold">Employee ID:</span>{" "}
+              <span className="italic text-gray-500">
+                To be assigned by Admin
+              </span>
+            </div>
+            <div>
+              <span className="font-semibold">Employee Name:</span>{" "}
+              {fd.fullName}
+            </div>
+            <div>
+              <span className="font-semibold">Position:</span>{" "}
+              {fd.postApplying.join(", ")}
+            </div>
+          </div>
+
+          <div>
+            <span className="font-semibold">Subject:</span> Formal Acceptance of
+            Performance and Confidentiality Terms
+          </div>
+
+          <p>
+            This document serves as a binding agreement between{" "}
+            <strong>Infinexy Solution</strong> (the "Company") and{" "}
+            <strong>{fd.fullName}</strong> (the "Employee"). By signing this
+            letter, the Employee acknowledges and agrees to the following
+            specific terms and conditions governing their employment:
+          </p>
+
+          <div className="space-y-3">
+            <div>
+              <div className="font-bold text-base" style={{ color: "#1a2c6b" }}>
+                1. Performance-Linked Salary Structure
+              </div>
+              <p className="mt-1">
+                The Employee understands that their role is target-driven. The
+                monthly salary is contingent upon the successful completion of
+                the assigned Loan Disbursement Targets.
+              </p>
+              <ul className="mt-2 space-y-1 ml-4">
+                <li>
+                  <span className="font-semibold">Target Achievement:</span> The
+                  Employee is required to achieve 100% of the monthly loan
+                  disbursement target as set by the management.
+                </li>
+                <li className="mt-1">
+                  <span className="font-semibold">
+                    Penalty for Non-Completion:
+                  </span>{" "}
+                  In the event the Employee fails to achieve the assigned
+                  monthly loan target, the Employee shall be entitled to receive
+                  only <strong>20% (twenty percent)</strong> of their total
+                  gross monthly salary. The remaining 80% is considered
+                  performance-contingent and will be forfeited for that month.
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="font-bold text-base" style={{ color: "#1a2c6b" }}>
+                2. Data Security and Confidentiality
+              </div>
+              <p className="mt-1">
+                The Employee will have access to sensitive company data,
+                including client financial records, lead databases, and
+                proprietary lending algorithms.
+              </p>
+              <ul className="mt-2 space-y-1 ml-4">
+                <li>
+                  <span className="font-semibold">Non-Disclosure:</span> The
+                  Employee agrees to maintain strict confidentiality. No data
+                  shall be copied, transferred, or shared with third parties
+                  without written authorization.
+                </li>
+                <li className="mt-1">
+                  <span className="font-semibold">
+                    Liability for Data Theft:
+                  </span>{" "}
+                  If the Employee is found responsible for any data theft,
+                  unauthorized data transfer, or breach of company digital
+                  security, they shall be legally bound to pay a penalty of{" "}
+                  <strong>Rs. 1,00,000 (One Lakh Rupees)</strong> to the
+                  Company.
+                </li>
+                <li className="mt-1">
+                  <span className="font-semibold">Legal Action:</span> This
+                  penalty is independent of any further criminal or civil legal
+                  proceedings the Company may initiate to recover damages.
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <div className="font-bold text-base" style={{ color: "#1a2c6b" }}>
+                3. General Terms &amp; Conditions
+              </div>
+              <p className="mt-1">
+                The Employee agrees to abide by all other standard operating
+                procedures, codes of conduct, and internal policies of the
+                Company as updated from time to time.
+              </p>
+            </div>
+          </div>
+
+          {/* Declaration */}
+          <div
+            className="border rounded-lg p-5 mt-4"
+            style={{ borderColor: "#c9a84c", background: "#fffdf5" }}
+          >
+            <div
+              className="font-bold text-base mb-2 uppercase tracking-wide"
+              style={{ color: "#1a2c6b" }}
+            >
+              DECLARATION &amp; ACCEPTANCE
+            </div>
+            <p>
+              I, <strong>{fd.fullName}</strong>, have read and fully understood
+              the terms mentioned above. I voluntarily agree to the
+              performance-linked salary structure (including the 20% payout
+              clause for missed targets) and the financial liability of Rs.
+              1,00,000 in the event of a data breach or theft.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-6">
+              <div>
+                <div className="border-b border-gray-400 pb-1 mb-1 w-full" />
+                <div className="text-sm text-gray-600">Employee Signature</div>
+              </div>
+              <div>
+                <div className="border-b border-gray-400 pb-1 mb-1 w-full" />
+                <div className="text-sm text-gray-600">Date</div>
+              </div>
+              <div>
+                <div className="border-b border-gray-400 pb-1 mb-1 w-full" />
+                <div className="text-sm text-gray-600">Witness Signature</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Acceptance Checkbox */}
+      <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <Checkbox
+          id="accept-letter"
+          checked={accepted}
+          onCheckedChange={(v) => setAccepted(v === true)}
+          data-ocid="acceptance.checkbox"
+          className="mt-0.5"
+        />
+        <label
+          htmlFor="accept-letter"
+          className="text-sm leading-relaxed cursor-pointer"
+        >
+          I, <strong>{fd.fullName}</strong>, have read and fully understood the
+          terms mentioned above and voluntarily agree to the performance-linked
+          salary structure (including the 20% payout clause for missed targets)
+          and the financial liability of Rs. 1,00,000 in the event of a data
+          breach or theft.
+        </label>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between pt-2">
+        <Button
+          variant="outline"
+          onClick={onBack}
+          data-ocid="acceptance.button"
+        >
+          <ChevronLeft className="w-4 h-4 mr-1" /> Back to Review
+        </Button>
         <Button
           onClick={onSubmit}
-          disabled={submitting || !actorReady}
-          style={{ background: "#1a2c6b", color: "white" }}
+          disabled={!accepted || submitting || !actorReady}
+          style={{
+            background: accepted ? "#1a2c6b" : undefined,
+            color: accepted ? "white" : undefined,
+          }}
           className="px-8"
-          data-ocid="review.submit_button"
+          data-ocid="acceptance.submit_button"
         >
           {submitting
             ? "Submitting..."
             : !actorReady
               ? "Connecting..."
-              : "Submit Form"}
+              : "Submit & Accept"}
         </Button>
       </div>
     </div>

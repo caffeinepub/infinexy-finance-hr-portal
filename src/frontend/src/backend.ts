@@ -181,6 +181,8 @@ export interface backendInterface {
     updateEmployeeRecord(id: string, updatedRecord: EmployeeRecord): Promise<EmployeeRecord>;
     verifyAdminLogin(username: string, passwordHash: string): Promise<boolean>;
     changeAdminPassword(oldHash: string, newHash: string): Promise<boolean>;
+    recordAcceptanceLetter(employeeId: string, acceptedDate: string): Promise<void>;
+    getAcceptanceLetter(employeeId: string): Promise<string | null>;
 }
 import type { EmployeeRecord as _EmployeeRecord, EmployeeStatus as _EmployeeStatus, Time as _Time, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -547,6 +549,32 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.changeAdminPassword(arg0, arg1);
             return result;
+        }
+    }
+    async recordAcceptanceLetter(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                await this.actor.recordAcceptanceLetter(arg0, arg1);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            await this.actor.recordAcceptanceLetter(arg0, arg1);
+        }
+    }
+    async getAcceptanceLetter(arg0: string): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAcceptanceLetter(arg0);
+                return result.length > 0 ? result[0] : null;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAcceptanceLetter(arg0);
+            return result.length > 0 ? result[0] : null;
         }
     }
 }

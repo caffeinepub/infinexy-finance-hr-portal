@@ -81,6 +81,12 @@ export default function AdminDashboard() {
     confirm: "",
   });
   const [passportURL, setPassportURL] = useState<string | null>(null);
+  const [letterEmployee, setLetterEmployee] = useState<EmployeeRecord | null>(
+    null,
+  );
+  const [acceptanceMap, setAcceptanceMap] = useState<Record<string, string>>(
+    {},
+  );
   const [pwdLoading, setPwdLoading] = useState(false);
 
   useEffect(() => {
@@ -91,7 +97,12 @@ export default function AdminDashboard() {
     queryKey: ["employees"],
     queryFn: async () => {
       if (!actor) return [];
-      return actor.getAllEmployeeRecords();
+      const [records, letters] = await Promise.all([
+        actor.getAllEmployeeRecords(),
+        (actor as any).getAllAcceptanceLetters(),
+      ]);
+      setAcceptanceMap(Object.fromEntries(letters));
+      return records;
     },
     enabled: !!actor && !isFetching,
   });
@@ -329,6 +340,7 @@ export default function AdminDashboard() {
                       "Status",
                       "Submitted",
                       "Joining Date",
+                      "Acceptance Letter",
                       "Actions",
                     ].map((h) => (
                       <th
@@ -377,6 +389,24 @@ export default function AdminDashboard() {
                           {extras.dateOfJoining || "\u2014"}
                         </td>
                         <td className="px-4 py-3">
+                          {acceptanceMap[emp.id] ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              style={{
+                                borderColor: "#1a2c6b",
+                                color: "#1a2c6b",
+                              }}
+                              onClick={() => setLetterEmployee(emp)}
+                              data-ocid={`employees.secondary_button.${i + 1}`}
+                            >
+                              View Letter
+                            </Button>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-1">
                             <Button
                               size="sm"
@@ -391,7 +421,7 @@ export default function AdminDashboard() {
                               variant="outline"
                               className="text-amber-700 border-amber-300"
                               onClick={() => handleDownloadPDF(emp)}
-                              data-ocid={`employees.secondary_button.${i + 1}`}
+                              data-ocid={`employees.download_button.${i + 1}`}
                             >
                               <Download className="w-3 h-3" />
                             </Button>
@@ -605,7 +635,7 @@ export default function AdminDashboard() {
                   fileId={selectedEmployee.experienceCertificateFileId}
                 />
                 <DocRow
-                  label="Leaving Letter"
+                  label="Relieving Letter"
                   fileId={selectedEmployee.leavingLetterFileId}
                 />
                 <DocRow
@@ -669,6 +699,233 @@ export default function AdminDashboard() {
               data-ocid="employees.save_button"
             >
               {updateMutation.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Acceptance Letter Dialog */}
+      <Dialog
+        open={!!letterEmployee}
+        onOpenChange={(o) => !o && setLetterEmployee(null)}
+      >
+        <DialogContent
+          className="max-w-3xl max-h-[90vh] overflow-y-auto print:block"
+          data-ocid="acceptance.dialog"
+        >
+          <DialogHeader>
+            <DialogTitle
+              style={{
+                color: "#1a2c6b",
+                fontFamily: "'Playfair Display', serif",
+              }}
+            >
+              Employment Terms &amp; Performance Agreement
+            </DialogTitle>
+          </DialogHeader>
+          {letterEmployee && (
+            <div
+              style={{ fontFamily: "'Times New Roman', serif" }}
+              className="space-y-4 text-[14px] leading-relaxed text-gray-800"
+            >
+              {/* Letter Header */}
+              <div
+                className="flex items-center justify-between px-6 py-4 rounded-lg"
+                style={{ background: "#1a2c6b" }}
+              >
+                <div>
+                  <div
+                    className="text-xl font-bold text-white"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
+                    INFINEXY SOLUTION
+                  </div>
+                  <div className="text-xs text-white/70 mt-0.5">
+                    Employment Terms & Performance Agreement
+                  </div>
+                </div>
+                <img
+                  src="/assets/uploads/WhatsApp-Image-2026-02-27-at-11.18.04-AM-1-1.jpeg"
+                  alt="Infinexy"
+                  className="h-12 object-contain bg-white rounded p-1"
+                />
+              </div>
+              <div className="h-1 rounded" style={{ background: "#c9a84c" }} />
+
+              <div
+                className="text-center font-bold text-base uppercase tracking-wide"
+                style={{ color: "#1a2c6b" }}
+              >
+                EMPLOYMENT TERMS &amp; PERFORMANCE AGREEMENT
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-sm border-b pb-3">
+                <div>
+                  <span className="font-semibold">Date:</span> March 29, 2026
+                </div>
+                <div>
+                  <span className="font-semibold">Employee ID:</span>{" "}
+                  {letterEmployee.id}
+                </div>
+                <div>
+                  <span className="font-semibold">Employee Name:</span>{" "}
+                  {letterEmployee.fullName}
+                </div>
+                <div>
+                  <span className="font-semibold">Position:</span>{" "}
+                  {letterEmployee.postApplying}
+                </div>
+              </div>
+
+              <div>
+                <span className="font-semibold">Subject:</span> Formal
+                Acceptance of Performance and Confidentiality Terms
+              </div>
+
+              <p>
+                This document serves as a binding agreement between{" "}
+                <strong>Infinexy Solution</strong> (the "Company") and{" "}
+                <strong>{letterEmployee.fullName}</strong> (the "Employee"). By
+                signing this letter, the Employee acknowledges and agrees to the
+                following specific terms and conditions governing their
+                employment:
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <div className="font-bold" style={{ color: "#1a2c6b" }}>
+                    1. Performance-Linked Salary Structure
+                  </div>
+                  <p className="mt-1">
+                    The Employee understands that their role is target-driven.
+                    The monthly salary is contingent upon the successful
+                    completion of the assigned Loan Disbursement Targets.
+                  </p>
+                  <ul className="mt-1 ml-4 space-y-1">
+                    <li>
+                      <span className="font-semibold">Target Achievement:</span>{" "}
+                      The Employee is required to achieve 100% of the monthly
+                      loan disbursement target as set by the management.
+                    </li>
+                    <li>
+                      <span className="font-semibold">
+                        Penalty for Non-Completion:
+                      </span>{" "}
+                      In the event the Employee fails to achieve the assigned
+                      monthly loan target, the Employee shall be entitled to
+                      receive only <strong>20% (twenty percent)</strong> of
+                      their total gross monthly salary. The remaining 80% is
+                      considered performance-contingent and will be forfeited
+                      for that month.
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <div className="font-bold" style={{ color: "#1a2c6b" }}>
+                    2. Data Security and Confidentiality
+                  </div>
+                  <p className="mt-1">
+                    The Employee will have access to sensitive company data,
+                    including client financial records, lead databases, and
+                    proprietary lending algorithms.
+                  </p>
+                  <ul className="mt-1 ml-4 space-y-1">
+                    <li>
+                      <span className="font-semibold">Non-Disclosure:</span> The
+                      Employee agrees to maintain strict confidentiality. No
+                      data shall be copied, transferred, or shared with third
+                      parties without written authorization.
+                    </li>
+                    <li>
+                      <span className="font-semibold">
+                        Liability for Data Theft:
+                      </span>{" "}
+                      If the Employee is found responsible for any data theft,
+                      unauthorized data transfer, or breach of company digital
+                      security, they shall be legally bound to pay a penalty of{" "}
+                      <strong>Rs. 1,00,000 (One Lakh Rupees)</strong> to the
+                      Company.
+                    </li>
+                    <li>
+                      <span className="font-semibold">Legal Action:</span> This
+                      penalty is independent of any further criminal or civil
+                      legal proceedings the Company may initiate to recover
+                      damages.
+                    </li>
+                  </ul>
+                </div>
+                <div>
+                  <div className="font-bold" style={{ color: "#1a2c6b" }}>
+                    3. General Terms &amp; Conditions
+                  </div>
+                  <p className="mt-1">
+                    The Employee agrees to abide by all other standard operating
+                    procedures, codes of conduct, and internal policies of the
+                    Company as updated from time to time.
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="border rounded-lg p-4 mt-2"
+                style={{ borderColor: "#c9a84c", background: "#fffdf5" }}
+              >
+                <div
+                  className="font-bold uppercase tracking-wide mb-2"
+                  style={{ color: "#1a2c6b" }}
+                >
+                  DECLARATION &amp; ACCEPTANCE
+                </div>
+                <p>
+                  I, <strong>{letterEmployee.fullName}</strong>, have read and
+                  fully understood the terms mentioned above. I voluntarily
+                  agree to the performance-linked salary structure (including
+                  the 20% payout clause for missed targets) and the financial
+                  liability of Rs. 1,00,000 in the event of a data breach or
+                  theft.
+                </p>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="border-b border-gray-400 pb-1 mb-1" />
+                    <div className="text-xs text-gray-500">
+                      Employee Signature
+                    </div>
+                  </div>
+                  <div>
+                    <div className="border-b border-gray-400 pb-1 mb-1" />
+                    <div className="text-xs text-gray-500">Date</div>
+                  </div>
+                  <div>
+                    <div className="border-b border-gray-400 pb-1 mb-1" />
+                    <div className="text-xs text-gray-500">
+                      Witness Signature
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {letterEmployee && acceptanceMap[letterEmployee.id] && (
+                <div className="text-sm text-green-700 font-semibold text-center border border-green-200 bg-green-50 rounded-lg py-2">
+                  ✓ Employee accepted this agreement on:{" "}
+                  {acceptanceMap[letterEmployee.id]}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              onClick={() => window.print()}
+              style={{ background: "#1a2c6b", color: "white" }}
+              data-ocid="acceptance.primary_button"
+            >
+              Print Letter
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setLetterEmployee(null)}
+              data-ocid="acceptance.close_button"
+            >
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

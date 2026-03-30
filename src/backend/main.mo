@@ -91,6 +91,8 @@ actor {
   // Admin credentials stored in canister for multi-device login.
   // Default password hash is btoa("admin123") = "YWRtaW4xMjM=" (computed on the frontend)
   stable var adminUsername : Text = "admin";
+  // Acceptance letter data stored separately to avoid stable variable compatibility issues
+  let acceptanceLetters = Map.empty<Text, Text>(); // key: employeeId, value: acceptedDate
   stable var adminPasswordHash : Text = "YWRtaW4xMjM=";
 
   // Verify admin login - callable from any device
@@ -219,5 +221,18 @@ actor {
 
   public query func getDocumentBlob(id : Text) : async ?Blob {
     documentStore.get(id);
+  };
+
+  // Acceptance letter functions
+  public shared func recordAcceptanceLetter(employeeId : Text, acceptedDate : Text) : async () {
+    acceptanceLetters.add(employeeId, acceptedDate);
+  };
+
+  public query func getAcceptanceLetter(employeeId : Text) : async ?Text {
+    acceptanceLetters.get(employeeId);
+  };
+
+  public query func getAllAcceptanceLetters() : async [(Text, Text)] {
+    acceptanceLetters.entries().toArray();
   };
 };

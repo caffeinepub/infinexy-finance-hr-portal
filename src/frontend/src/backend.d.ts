@@ -47,6 +47,8 @@ export interface EmployeeRecord {
     educationLevel: string;
     experienceCertificateFileId?: string;
     declarationDate: string;
+    acceptanceLetterAccepted?: boolean;
+    acceptanceLetterDate?: string;
 }
 export interface UserProfile {
     name: string;
@@ -79,4 +81,7 @@ export interface backendInterface {
     storeDocument(data: Uint8Array, fileName: string): Promise<string>;
     submitEmployeeRecord(record: EmployeeRecord): Promise<string>;
     updateEmployeeRecord(id: string, updatedRecord: EmployeeRecord): Promise<EmployeeRecord>;
+    recordAcceptanceLetter(employeeId: string, acceptedDate: string): Promise<void>;
+    getAcceptanceLetter(employeeId: string): Promise<string | null>;
+    getAllAcceptanceLetters(): Promise<Array<[string, string]>>;
 }
