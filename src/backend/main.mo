@@ -82,18 +82,58 @@ actor {
     name : Text;
   };
 
+  // Stable backing storage to survive canister upgrades
+  stable var stableEmployeeRecords : [(Text, EmployeeRecord)] = [];
+  stable var stableDocumentStore : [(Text, Blob)] = [];
+  stable var stableDocumentNames : [(Text, Text)] = [];
+  stable var stableAcceptanceLetters : [(Text, Text)] = [];
+  stable var stableDocumentIdCounter : Nat = 0;
+
   let employeeRecords = Map.empty<Text, EmployeeRecord>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let documentStore = Map.empty<Text, Blob>();
   let documentNames = Map.empty<Text, Text>();
-  var documentIdCounter : Nat = 0;
+  var documentIdCounter : Nat = stableDocumentIdCounter;
 
   // Admin credentials stored in canister for multi-device login.
   // Default password hash is btoa("admin123") = "YWRtaW4xMjM=" (computed on the frontend)
   stable var adminUsername : Text = "admin";
-  // Acceptance letter data stored separately to avoid stable variable compatibility issues
-  let acceptanceLetters = Map.empty<Text, Text>(); // key: employeeId, value: acceptedDate
   stable var adminPasswordHash : Text = "YWRtaW4xMjM=";
+
+  let acceptanceLetters = Map.empty<Text, Text>(); // key: employeeId, value: acceptedDate
+
+  // Restore data from stable storage on canister startup
+  do {
+    for ((k, v) in stableEmployeeRecords.vals()) {
+      employeeRecords.add(k, v);
+    };
+    for ((k, v) in stableDocumentStore.vals()) {
+      documentStore.add(k, v);
+    };
+    for ((k, v) in stableDocumentNames.vals()) {
+      documentNames.add(k, v);
+    };
+    for ((k, v) in stableAcceptanceLetters.vals()) {
+      acceptanceLetters.add(k, v);
+    };
+  };
+
+  // Persist all in-memory data to stable storage before upgrade
+  system func preupgrade() {
+    stableEmployeeRecords := employeeRecords.entries().toArray();
+    stableDocumentStore := documentStore.entries().toArray();
+    stableDocumentNames := documentNames.entries().toArray();
+    stableAcceptanceLetters := acceptanceLetters.entries().toArray();
+    stableDocumentIdCounter := documentIdCounter;
+  };
+
+  // Clear stable arrays after upgrade to free memory (data is back in Maps)
+  system func postupgrade() {
+    stableEmployeeRecords := [];
+    stableDocumentStore := [];
+    stableDocumentNames := [];
+    stableAcceptanceLetters := [];
+  };
 
   // Verify admin login - callable from any device
   public query func verifyAdminLogin(username : Text, passwordHash : Text) : async Bool {

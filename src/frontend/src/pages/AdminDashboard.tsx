@@ -31,8 +31,10 @@ import { useRouter } from "@tanstack/react-router";
 import {
   Download,
   Eye,
+  FileText,
   Key,
   LogOut,
+  Printer,
   RefreshCw,
   Search,
   Trash2,
@@ -64,6 +66,9 @@ export default function AdminDashboard() {
   const qc = useQueryClient();
 
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState<"employees" | "letters">(
+    "employees",
+  );
   const [selectedEmployee, setSelectedEmployee] =
     useState<EmployeeRecord | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -104,7 +109,10 @@ export default function AdminDashboard() {
       setAcceptanceMap(Object.fromEntries(letters));
       return records;
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor,
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const deleteMutation = useMutation({
@@ -139,6 +147,8 @@ export default function AdminDashboard() {
       e.fullName.toLowerCase().includes(search.toLowerCase()) ||
       e.phone.includes(search),
   );
+
+  const letterEmployees = employees.filter((e) => !!acceptanceMap[e.id]);
 
   const openEmployee = async (emp: EmployeeRecord) => {
     setSelectedEmployee(emp);
@@ -276,28 +286,250 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <div className="bg-white rounded-lg border shadow-sm">
-          <div className="p-4 border-b flex items-center justify-between gap-4 flex-wrap">
-            <h2
-              className="text-lg font-bold flex items-center gap-2"
-              style={{
-                color: "#1a2c6b",
-                fontFamily: "'Playfair Display', serif",
-              }}
-            >
-              <Users className="w-5 h-5" /> Employee Records
-            </h2>
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-9 w-64"
-                  data-ocid="dashboard.search_input"
-                />
+        {/* Tab Switcher */}
+        <div className="flex gap-2 mb-4">
+          <button
+            type="button"
+            onClick={() => setActiveTab("employees")}
+            data-ocid="dashboard.tab"
+            className="flex items-center gap-2 px-5 py-2 rounded-t-lg border text-sm font-semibold transition-colors"
+            style={
+              activeTab === "employees"
+                ? {
+                    background: "#1a2c6b",
+                    color: "white",
+                    borderColor: "#1a2c6b",
+                  }
+                : {
+                    background: "white",
+                    color: "#1a2c6b",
+                    borderColor: "#1a2c6b",
+                  }
+            }
+          >
+            <Users className="w-4 h-4" /> Employee Records
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("letters")}
+            data-ocid="dashboard.tab"
+            className="flex items-center gap-2 px-5 py-2 rounded-t-lg border text-sm font-semibold transition-colors"
+            style={
+              activeTab === "letters"
+                ? {
+                    background: "#1a2c6b",
+                    color: "white",
+                    borderColor: "#1a2c6b",
+                  }
+                : {
+                    background: "white",
+                    color: "#1a2c6b",
+                    borderColor: "#1a2c6b",
+                  }
+            }
+          >
+            <FileText className="w-4 h-4" /> Acceptance Letters
+            {letterEmployees.length > 0 && (
+              <span
+                className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-bold"
+                style={
+                  activeTab === "letters"
+                    ? { background: "white", color: "#1a2c6b" }
+                    : { background: "#1a2c6b", color: "white" }
+                }
+              >
+                {letterEmployees.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === "employees" && (
+          <div className="bg-white rounded-lg border shadow-sm">
+            <div className="p-4 border-b flex items-center justify-between gap-4 flex-wrap">
+              <h2
+                className="text-lg font-bold flex items-center gap-2"
+                style={{
+                  color: "#1a2c6b",
+                  fontFamily: "'Playfair Display', serif",
+                }}
+              >
+                <Users className="w-5 h-5" /> Employee Records
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or phone..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="pl-9 w-64"
+                    data-ocid="dashboard.search_input"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    qc.invalidateQueries({ queryKey: ["employees"] })
+                  }
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
               </div>
+            </div>
+
+            {isLoading || isFetching ? (
+              <div
+                className="p-12 text-center"
+                data-ocid="dashboard.loading_state"
+              >
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
+                <p className="text-muted-foreground">
+                  Loading employee records...
+                </p>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div
+                className="p-12 text-center"
+                data-ocid="dashboard.empty_state"
+              >
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">
+                  No employee records found.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      {[
+                        "#",
+                        "Full Name",
+                        "Phone",
+                        "Post Applied",
+                        "Status",
+                        "Submitted",
+                        "Joining Date",
+                        "Acceptance Letter",
+                        "Actions",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filtered.map((emp, i) => {
+                      const extras = getEmployeeExtras(emp.id);
+                      return (
+                        <tr
+                          key={emp.id}
+                          className="hover:bg-gray-50 transition-colors"
+                          data-ocid={`employees.item.${i + 1}`}
+                        >
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            {i + 1}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-sm">
+                            {emp.fullName}
+                          </td>
+                          <td className="px-4 py-3 text-sm">{emp.phone}</td>
+                          <td className="px-4 py-3 text-sm">
+                            {emp.postApplying}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLORS[emp.status]}`}
+                            >
+                              {emp.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {emp.submittedAt
+                              ? new Date(
+                                  Number(emp.submittedAt) / 1000000,
+                                ).toLocaleDateString("en-IN")
+                              : "\u2014"}
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {extras.dateOfJoining || "\u2014"}
+                          </td>
+                          <td className="px-4 py-3">
+                            {acceptanceMap[emp.id] ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                style={{
+                                  borderColor: "#1a2c6b",
+                                  color: "#1a2c6b",
+                                }}
+                                onClick={() => setLetterEmployee(emp)}
+                                data-ocid={`employees.secondary_button.${i + 1}`}
+                              >
+                                View Letter
+                              </Button>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openEmployee(emp)}
+                                data-ocid={`employees.edit_button.${i + 1}`}
+                              >
+                                <Eye className="w-3 h-3 mr-1" /> View
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-amber-700 border-amber-300"
+                                onClick={() => handleDownloadPDF(emp)}
+                                data-ocid={`employees.download_button.${i + 1}`}
+                              >
+                                <Download className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-destructive border-destructive/30"
+                                onClick={() => setDeleteId(emp.id)}
+                                data-ocid={`employees.delete_button.${i + 1}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === "letters" && (
+          <div className="bg-white rounded-lg border shadow-sm">
+            <div className="p-4 border-b flex items-center justify-between gap-4 flex-wrap">
+              <h2
+                className="text-lg font-bold flex items-center gap-2"
+                style={{
+                  color: "#1a2c6b",
+                  fontFamily: "'Playfair Display', serif",
+                }}
+              >
+                <FileText className="w-5 h-5" /> Employee Acceptance Letters
+              </h2>
               <Button
                 variant="outline"
                 size="icon"
@@ -308,58 +540,54 @@ export default function AdminDashboard() {
                 <RefreshCw className="w-4 h-4" />
               </Button>
             </div>
-          </div>
 
-          {isLoading || isFetching ? (
-            <div
-              className="p-12 text-center"
-              data-ocid="dashboard.loading_state"
-            >
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
-              <p className="text-muted-foreground">
-                Loading employee records...
-              </p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="p-12 text-center" data-ocid="dashboard.empty_state">
-              <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">
-                No employee records found.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 border-b">
-                    {[
-                      "#",
-                      "Full Name",
-                      "Phone",
-                      "Post Applied",
-                      "Status",
-                      "Submitted",
-                      "Joining Date",
-                      "Acceptance Letter",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filtered.map((emp, i) => {
-                    const extras = getEmployeeExtras(emp.id);
-                    return (
+            {isLoading || isFetching ? (
+              <div
+                className="p-12 text-center"
+                data-ocid="letters.loading_state"
+              >
+                <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary mb-2" />
+                <p className="text-muted-foreground">Loading letters...</p>
+              </div>
+            ) : letterEmployees.length === 0 ? (
+              <div className="p-12 text-center" data-ocid="letters.empty_state">
+                <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground font-medium">
+                  No acceptance letters received yet.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Letters will appear here after employees complete and accept
+                  the Employment Terms &amp; Performance Agreement.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 border-b">
+                      {[
+                        "#",
+                        "Employee Name",
+                        "Phone",
+                        "Position",
+                        "Accepted Date",
+                        "Actions",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-3 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {letterEmployees.map((emp, i) => (
                       <tr
                         key={emp.id}
                         className="hover:bg-gray-50 transition-colors"
-                        data-ocid={`employees.item.${i + 1}`}
+                        data-ocid={`letters.item.${i + 1}`}
                       >
                         <td className="px-4 py-3 text-sm text-muted-foreground">
                           {i + 1}
@@ -371,79 +599,27 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3 text-sm">
                           {emp.postApplying}
                         </td>
+                        <td className="px-4 py-3 text-sm">
+                          {acceptanceMap[emp.id] || "\u2014"}
+                        </td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold border ${STATUS_COLORS[emp.status]}`}
+                          <Button
+                            size="sm"
+                            onClick={() => setLetterEmployee(emp)}
+                            style={{ background: "#1a2c6b", color: "white" }}
+                            data-ocid={`letters.primary_button.${i + 1}`}
                           >
-                            {emp.status}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {emp.submittedAt
-                            ? new Date(
-                                Number(emp.submittedAt) / 1000000,
-                              ).toLocaleDateString("en-IN")
-                            : "\u2014"}
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {extras.dateOfJoining || "\u2014"}
-                        </td>
-                        <td className="px-4 py-3">
-                          {acceptanceMap[emp.id] ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              style={{
-                                borderColor: "#1a2c6b",
-                                color: "#1a2c6b",
-                              }}
-                              onClick={() => setLetterEmployee(emp)}
-                              data-ocid={`employees.secondary_button.${i + 1}`}
-                            >
-                              View Letter
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openEmployee(emp)}
-                              data-ocid={`employees.edit_button.${i + 1}`}
-                            >
-                              <Eye className="w-3 h-3 mr-1" /> View
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-amber-700 border-amber-300"
-                              onClick={() => handleDownloadPDF(emp)}
-                              data-ocid={`employees.download_button.${i + 1}`}
-                            >
-                              <Download className="w-3 h-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-destructive border-destructive/30"
-                              onClick={() => setDeleteId(emp.id)}
-                              data-ocid={`employees.delete_button.${i + 1}`}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
+                            <Printer className="w-3 h-3 mr-1" /> Print
+                          </Button>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Employee Detail Dialog */}
