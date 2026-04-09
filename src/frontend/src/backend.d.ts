@@ -47,41 +47,27 @@ export interface EmployeeRecord {
     educationLevel: string;
     experienceCertificateFileId?: string;
     declarationDate: string;
-    acceptanceLetterAccepted?: boolean;
-    acceptanceLetterDate?: string;
-}
-export interface UserProfile {
-    name: string;
 }
 export enum EmployeeStatus {
     active = "active",
     pending = "pending",
     inactive = "inactive"
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface backendInterface {
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    changeAdminPassword(oldHash: string, newHash: string): Promise<boolean>;
     deleteEmployeeRecord(id: string): Promise<void>;
+    getAcceptanceLetter(employeeId: string): Promise<string | null>;
+    getAllAcceptanceLetters(): Promise<Array<[string, string]>>;
     getAllEmployeeRecords(): Promise<Array<EmployeeRecord>>;
-    getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
     getDocumentBlob(id: string): Promise<Uint8Array | null>;
     getEmployeeCountByStatus(status: string): Promise<bigint>;
     getEmployeeRecord(id: string): Promise<EmployeeRecord | null>;
     getEmployeeRecordsByIdPattern(pattern: string): Promise<Array<EmployeeRecord>>;
     getEmployeeRecordsByStatus(status: EmployeeStatus): Promise<Array<EmployeeRecord>>;
     getEmployeeRecordsByStatusSorted(status: EmployeeStatus): Promise<Array<EmployeeRecord>>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
-    isCallerAdmin(): Promise<boolean>;
-    saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    recordAcceptanceLetter(employeeId: string, acceptedDate: string): Promise<void>;
     storeDocument(data: Uint8Array, fileName: string): Promise<string>;
     submitEmployeeRecord(record: EmployeeRecord): Promise<string>;
     updateEmployeeRecord(id: string, updatedRecord: EmployeeRecord): Promise<EmployeeRecord>;
-    recordAcceptanceLetter(employeeId: string, acceptedDate: string): Promise<void>;
-    getAcceptanceLetter(employeeId: string): Promise<string | null>;
-    getAllAcceptanceLetters(): Promise<Array<[string, string]>>;
+    verifyAdminLogin(username: string, passwordHash: string): Promise<boolean>;
 }

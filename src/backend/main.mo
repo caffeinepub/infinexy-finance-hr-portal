@@ -2,20 +2,12 @@ import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
 import Time "mo:core/Time";
-import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
-import Blob "mo:core/Blob";
-import Principal "mo:core/Principal";
-import Storage "blob-storage/Storage";
-import MixinStorage "blob-storage/Mixin";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-  include MixinStorage();
 
   type EmployeeStatus = {
     #pending;
@@ -78,10 +70,6 @@ actor {
     status : EmployeeStatus;
   };
 
-  type UserProfile = {
-    name : Text;
-  };
-
   // Stable backing storage to survive canister upgrades
   stable var stableEmployeeRecords : [(Text, EmployeeRecord)] = [];
   stable var stableDocumentStore : [(Text, Blob)] = [];
@@ -90,7 +78,6 @@ actor {
   stable var stableDocumentIdCounter : Nat = 0;
 
   let employeeRecords = Map.empty<Text, EmployeeRecord>();
-  let userProfiles = Map.empty<Principal, UserProfile>();
   let documentStore = Map.empty<Text, Blob>();
   let documentNames = Map.empty<Text, Text>();
   var documentIdCounter : Nat = stableDocumentIdCounter;
@@ -147,28 +134,6 @@ actor {
     };
     adminPasswordHash := newHash;
     true;
-  };
-
-  // User profile functions required by the instructions
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
-    };
-    userProfiles.get(caller);
-  };
-
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
-    userProfiles.get(user);
-  };
-
-  public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
-    userProfiles.add(caller, profile);
   };
 
   // Open to all - employees don't need to log in

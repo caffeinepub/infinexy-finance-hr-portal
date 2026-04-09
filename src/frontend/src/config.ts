@@ -1,179 +1,380 @@
-import {
-  createActor,
-  type backendInterface,
-  type CreateActorOptions,
-  ExternalBlob,
-} from "./backend";
-import { StorageClient } from "./utils/StorageClient";
-import { HttpAgent } from "@icp-sdk/core/agent";
+/**
+ * config.ts
+ *
+ * Creates a properly typed backend actor using HttpAgent + Actor.createActor
+ * with a manually-defined IDL matching the Motoko backend.
+ *
+ * This bypasses the empty generated IDL factory (declarations/backend.did.js)
+ * which has no method definitions until pnpm bindgen is re-run.
+ */
 
-const DEFAULT_STORAGE_GATEWAY_URL = "https://blob.caffeine.ai";
-const DEFAULT_BUCKET_NAME = "default-bucket";
-const DEFAULT_PROJECT_ID = "0000000-0000-0000-0000-00000000000";
+import { Actor, HttpAgent } from "@icp-sdk/core/agent";
+import { IDL } from "@icp-sdk/core/candid";
 
-interface JsonConfig {
-  backend_host: string;
-  backend_canister_id: string;
-  project_id: string;
-  ii_derivation_origin: string;
+// ---- Candid IDL matching Motoko backend ----
+
+const StatusVariant = IDL.Variant({
+  pending: IDL.Null,
+  active: IDL.Null,
+  inactive: IDL.Null,
+});
+
+const EmployeeRecordIDL = IDL.Record({
+  id: IDL.Text,
+  fullName: IDL.Text,
+  dateOfBirth: IDL.Text,
+  gender: IDL.Text,
+  phone: IDL.Text,
+  alternatePhone: IDL.Opt(IDL.Text),
+  email: IDL.Text,
+  fullAddress: IDL.Text,
+  postApplying: IDL.Text,
+  typesOfCalling: IDL.Vec(IDL.Text),
+  hasExperience: IDL.Bool,
+  experienceDetails: IDL.Opt(IDL.Text),
+  educationLevel: IDL.Text,
+  bankName: IDL.Text,
+  accountHolderName: IDL.Text,
+  accountNumber: IDL.Text,
+  ifscCode: IDL.Text,
+  upiId: IDL.Text,
+  aadhaarNumber: IDL.Text,
+  panNumber: IDL.Text,
+  declarationDate: IDL.Text,
+  signatureFileId: IDL.Opt(IDL.Text),
+  experienceCertificateFileId: IDL.Opt(IDL.Text),
+  leavingLetterFileId: IDL.Opt(IDL.Text),
+  salarySlip1FileId: IDL.Opt(IDL.Text),
+  salarySlip2FileId: IDL.Opt(IDL.Text),
+  salarySlip3FileId: IDL.Opt(IDL.Text),
+  class10CertFileId: IDL.Opt(IDL.Text),
+  class12CertFileId: IDL.Opt(IDL.Text),
+  diplomaFileId: IDL.Opt(IDL.Text),
+  bachelorFileId: IDL.Opt(IDL.Text),
+  masterFileId: IDL.Opt(IDL.Text),
+  cancelledChequeFileId: IDL.Opt(IDL.Text),
+  aadhaarCardFileId: IDL.Opt(IDL.Text),
+  panCardFileId: IDL.Opt(IDL.Text),
+  passportPhotoFileId: IDL.Opt(IDL.Text),
+  submittedAt: IDL.Int,
+  status: StatusVariant,
+});
+
+const backendIDL = IDL.Service({
+  // Admin auth
+  verifyAdminLogin: IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ["query"]),
+  changeAdminPassword: IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], []),
+
+  // Employee records
+  submitEmployeeRecord: IDL.Func([EmployeeRecordIDL], [IDL.Text], []),
+  getEmployeeRecord: IDL.Func([IDL.Text], [IDL.Opt(EmployeeRecordIDL)], ["query"]),
+  getAllEmployeeRecords: IDL.Func([], [IDL.Vec(EmployeeRecordIDL)], ["query"]),
+  updateEmployeeRecord: IDL.Func([IDL.Text, EmployeeRecordIDL], [EmployeeRecordIDL], []),
+  deleteEmployeeRecord: IDL.Func([IDL.Text], [], []),
+
+  // Document storage
+  storeDocument: IDL.Func([IDL.Vec(IDL.Nat8), IDL.Text], [IDL.Text], []),
+  getDocumentBlob: IDL.Func([IDL.Text], [IDL.Opt(IDL.Vec(IDL.Nat8))], ["query"]),
+
+  // Acceptance letters
+  recordAcceptanceLetter: IDL.Func([IDL.Text, IDL.Text], [], []),
+  getAcceptanceLetter: IDL.Func([IDL.Text], [IDL.Opt(IDL.Text)], ["query"]),
+  getAllAcceptanceLetters: IDL.Func([], [IDL.Vec(IDL.Tuple(IDL.Text, IDL.Text))], ["query"]),
+});
+
+// ---- EmployeeStatus: Candid variant encoding ----
+// Motoko #pending/#active/#inactive variants serialize as { pending: null } etc.
+// These are used both for encoding (sending to canister) and as display keys.
+export const EmployeeStatus = {
+  pending: "pending",
+  active: "active",
+  inactive: "inactive",
+} as const;
+
+export type EmployeeStatus = (typeof EmployeeStatus)[keyof typeof EmployeeStatus];
+
+// Raw Candid variant type returned from the canister
+export type CandidStatus = { pending: null } | { active: null } | { inactive: null };
+
+/** Extract string key from a Candid variant status object */
+export function statusKey(status: CandidStatus): EmployeeStatus {
+  if ("pending" in status) return "pending";
+  if ("active" in status) return "active";
+  return "inactive";
 }
 
-interface Config {
-  backend_host?: string;
-  backend_canister_id: string;
-  storage_gateway_url: string;
-  bucket_name: string;
-  project_id: string;
-  ii_derivation_origin?: string;
+/** Convert a string status to Candid variant for sending to canister */
+export function statusToCandid(status: EmployeeStatus): CandidStatus {
+  if (status === "active") return { active: null };
+  if (status === "inactive") return { inactive: null };
+  return { pending: null };
 }
 
-let configCache: Config | null = null;
+// ---- EmployeeRecord types ----
+/** Raw record as returned from the canister (status is Candid variant) */
+export interface EmployeeRecordRaw {
+  id: string;
+  fullName: string;
+  dateOfBirth: string;
+  gender: string;
+  phone: string;
+  alternatePhone: [] | [string];
+  email: string;
+  fullAddress: string;
+  postApplying: string;
+  typesOfCalling: string[];
+  hasExperience: boolean;
+  experienceDetails: [] | [string];
+  educationLevel: string;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId: string;
+  aadhaarNumber: string;
+  panNumber: string;
+  declarationDate: string;
+  signatureFileId: [] | [string];
+  experienceCertificateFileId: [] | [string];
+  leavingLetterFileId: [] | [string];
+  salarySlip1FileId: [] | [string];
+  salarySlip2FileId: [] | [string];
+  salarySlip3FileId: [] | [string];
+  class10CertFileId: [] | [string];
+  class12CertFileId: [] | [string];
+  diplomaFileId: [] | [string];
+  bachelorFileId: [] | [string];
+  masterFileId: [] | [string];
+  cancelledChequeFileId: [] | [string];
+  aadhaarCardFileId: [] | [string];
+  panCardFileId: [] | [string];
+  passportPhotoFileId: [] | [string];
+  submittedAt: bigint;
+  status: CandidStatus;
+}
 
-export async function loadConfig(): Promise<Config> {
-  if (configCache) {
+/** Normalized record used in the UI (optional fields unwrapped, status as string) */
+export interface EmployeeRecord {
+  id: string;
+  fullName: string;
+  dateOfBirth: string;
+  gender: string;
+  phone: string;
+  alternatePhone?: string;
+  email: string;
+  fullAddress: string;
+  postApplying: string;
+  typesOfCalling: string[];
+  hasExperience: boolean;
+  experienceDetails?: string;
+  educationLevel: string;
+  bankName: string;
+  accountHolderName: string;
+  accountNumber: string;
+  ifscCode: string;
+  upiId: string;
+  aadhaarNumber: string;
+  panNumber: string;
+  declarationDate: string;
+  signatureFileId?: string;
+  experienceCertificateFileId?: string;
+  leavingLetterFileId?: string;
+  salarySlip1FileId?: string;
+  salarySlip2FileId?: string;
+  salarySlip3FileId?: string;
+  class10CertFileId?: string;
+  class12CertFileId?: string;
+  diplomaFileId?: string;
+  bachelorFileId?: string;
+  masterFileId?: string;
+  cancelledChequeFileId?: string;
+  aadhaarCardFileId?: string;
+  panCardFileId?: string;
+  passportPhotoFileId?: string;
+  submittedAt: bigint;
+  status: EmployeeStatus;
+}
+
+function opt<T>(val: [] | [T]): T | undefined {
+  return val.length > 0 ? val[0] : undefined;
+}
+
+function optArr<T>(val: T | undefined): [] | [T] {
+  return val !== undefined && val !== null ? [val] : [];
+}
+
+/** Convert a raw canister record to a normalized UI record */
+export function normalizeRecord(raw: EmployeeRecordRaw): EmployeeRecord {
+  return {
+    id: raw.id,
+    fullName: raw.fullName,
+    dateOfBirth: raw.dateOfBirth,
+    gender: raw.gender,
+    phone: raw.phone,
+    alternatePhone: opt(raw.alternatePhone),
+    email: raw.email,
+    fullAddress: raw.fullAddress,
+    postApplying: raw.postApplying,
+    typesOfCalling: raw.typesOfCalling,
+    hasExperience: raw.hasExperience,
+    experienceDetails: opt(raw.experienceDetails),
+    educationLevel: raw.educationLevel,
+    bankName: raw.bankName,
+    accountHolderName: raw.accountHolderName,
+    accountNumber: raw.accountNumber,
+    ifscCode: raw.ifscCode,
+    upiId: raw.upiId,
+    aadhaarNumber: raw.aadhaarNumber,
+    panNumber: raw.panNumber,
+    declarationDate: raw.declarationDate,
+    signatureFileId: opt(raw.signatureFileId),
+    experienceCertificateFileId: opt(raw.experienceCertificateFileId),
+    leavingLetterFileId: opt(raw.leavingLetterFileId),
+    salarySlip1FileId: opt(raw.salarySlip1FileId),
+    salarySlip2FileId: opt(raw.salarySlip2FileId),
+    salarySlip3FileId: opt(raw.salarySlip3FileId),
+    class10CertFileId: opt(raw.class10CertFileId),
+    class12CertFileId: opt(raw.class12CertFileId),
+    diplomaFileId: opt(raw.diplomaFileId),
+    bachelorFileId: opt(raw.bachelorFileId),
+    masterFileId: opt(raw.masterFileId),
+    cancelledChequeFileId: opt(raw.cancelledChequeFileId),
+    aadhaarCardFileId: opt(raw.aadhaarCardFileId),
+    panCardFileId: opt(raw.panCardFileId),
+    passportPhotoFileId: opt(raw.passportPhotoFileId),
+    submittedAt: raw.submittedAt,
+    status: statusKey(raw.status),
+  };
+}
+
+/** Convert a normalized UI record to Candid raw format for the canister */
+export function denormalizeRecord(emp: EmployeeRecord): EmployeeRecordRaw {
+  return {
+    id: emp.id,
+    fullName: emp.fullName,
+    dateOfBirth: emp.dateOfBirth,
+    gender: emp.gender,
+    phone: emp.phone,
+    alternatePhone: optArr(emp.alternatePhone),
+    email: emp.email,
+    fullAddress: emp.fullAddress,
+    postApplying: emp.postApplying,
+    typesOfCalling: emp.typesOfCalling,
+    hasExperience: emp.hasExperience,
+    experienceDetails: optArr(emp.experienceDetails),
+    educationLevel: emp.educationLevel,
+    bankName: emp.bankName,
+    accountHolderName: emp.accountHolderName,
+    accountNumber: emp.accountNumber,
+    ifscCode: emp.ifscCode,
+    upiId: emp.upiId,
+    aadhaarNumber: emp.aadhaarNumber,
+    panNumber: emp.panNumber,
+    declarationDate: emp.declarationDate,
+    signatureFileId: optArr(emp.signatureFileId),
+    experienceCertificateFileId: optArr(emp.experienceCertificateFileId),
+    leavingLetterFileId: optArr(emp.leavingLetterFileId),
+    salarySlip1FileId: optArr(emp.salarySlip1FileId),
+    salarySlip2FileId: optArr(emp.salarySlip2FileId),
+    salarySlip3FileId: optArr(emp.salarySlip3FileId),
+    class10CertFileId: optArr(emp.class10CertFileId),
+    class12CertFileId: optArr(emp.class12CertFileId),
+    diplomaFileId: optArr(emp.diplomaFileId),
+    bachelorFileId: optArr(emp.bachelorFileId),
+    masterFileId: optArr(emp.masterFileId),
+    cancelledChequeFileId: optArr(emp.cancelledChequeFileId),
+    aadhaarCardFileId: optArr(emp.aadhaarCardFileId),
+    panCardFileId: optArr(emp.panCardFileId),
+    passportPhotoFileId: optArr(emp.passportPhotoFileId),
+    submittedAt: emp.submittedAt,
+    status: statusToCandid(emp.status),
+  };
+}
+
+// ---- Backend actor interface (uses raw Candid types) ----
+export interface BackendActor {
+  verifyAdminLogin(username: string, passwordHash: string): Promise<boolean>;
+  changeAdminPassword(oldHash: string, newHash: string): Promise<boolean>;
+  submitEmployeeRecord(record: EmployeeRecordRaw): Promise<string>;
+  getEmployeeRecord(id: string): Promise<[] | [EmployeeRecordRaw]>;
+  getAllEmployeeRecords(): Promise<EmployeeRecordRaw[]>;
+  updateEmployeeRecord(id: string, record: EmployeeRecordRaw): Promise<EmployeeRecordRaw>;
+  deleteEmployeeRecord(id: string): Promise<void>;
+  storeDocument(data: Uint8Array, fileName: string): Promise<string>;
+  getDocumentBlob(id: string): Promise<[] | [Uint8Array]>;
+  recordAcceptanceLetter(employeeId: string, acceptedDate: string): Promise<void>;
+  getAcceptanceLetter(employeeId: string): Promise<[] | [string]>;
+  getAllAcceptanceLetters(): Promise<[string, string][]>;
+}
+
+// ---- Canister config loading ----
+let configCache: { canisterId: string; host: string | undefined } | null = null;
+
+async function loadCanisterConfig(): Promise<{
+  canisterId: string;
+  host: string | undefined;
+}> {
+  if (configCache) return configCache;
+
+  const envCanisterId = process.env.CANISTER_ID_BACKEND;
+
+  try {
+    const base = (process.env.BASE_URL ?? "/").replace(/\/?$/, "/");
+    const resp = await fetch(`${base}env.json`);
+    const json = (await resp.json()) as {
+      backend_canister_id?: string;
+      backend_host?: string;
+    };
+    const canisterId =
+      json.backend_canister_id && json.backend_canister_id !== "undefined"
+        ? json.backend_canister_id
+        : (envCanisterId ?? "");
+    const host =
+      json.backend_host && json.backend_host !== "undefined"
+        ? json.backend_host
+        : undefined;
+    configCache = { canisterId, host };
+    return configCache;
+  } catch {
+    configCache = { canisterId: envCanisterId ?? "", host: undefined };
     return configCache;
   }
-  const backendCanisterId = process.env.CANISTER_ID_BACKEND;
-  const envBaseUrl = process.env.BASE_URL || "/";
-  const baseUrl = envBaseUrl.endsWith("/") ? envBaseUrl : `${envBaseUrl}/`;
-  try {
-    const response = await fetch(`${baseUrl}env.json`);
-    const config = (await response.json()) as JsonConfig;
-    if (!backendCanisterId && config.backend_canister_id === "undefined") {
-      console.error("CANISTER_ID_BACKEND is not set");
-      throw new Error("CANISTER_ID_BACKEND is not set");
-    }
-
-    const fullConfig = {
-      backend_host:
-        config.backend_host === "undefined" ? undefined : config.backend_host,
-      backend_canister_id: (config.backend_canister_id === "undefined"
-        ? backendCanisterId
-        : config.backend_canister_id) as string,
-      storage_gateway_url: process.env.STORAGE_GATEWAY_URL ?? "nogateway",
-      bucket_name: DEFAULT_BUCKET_NAME,
-      project_id:
-        config.project_id !== "undefined"
-          ? config.project_id
-          : DEFAULT_PROJECT_ID,
-      ii_derivation_origin:
-        config.ii_derivation_origin === "undefined"
-          ? undefined
-          : config.ii_derivation_origin,
-    };
-    configCache = fullConfig;
-    return fullConfig;
-  } catch {
-    if (!backendCanisterId) {
-      console.error("CANISTER_ID_BACKEND is not set");
-      throw new Error("CANISTER_ID_BACKEND is not set");
-    }
-    const fallbackConfig = {
-      backend_host: undefined,
-      backend_canister_id: backendCanisterId,
-      storage_gateway_url: DEFAULT_STORAGE_GATEWAY_URL,
-      bucket_name: DEFAULT_BUCKET_NAME,
-      project_id: DEFAULT_PROJECT_ID,
-      ii_derivation_origin: undefined,
-    };
-    return fallbackConfig;
-  }
 }
 
-function extractAgentErrorMessage(error: string): string {
-  const errorString = String(error);
-  const match = errorString.match(/with message:\s*'([^']+)'/s);
-  return match ? match[1] : errorString;
-}
+// ---- Singleton actor ----
+let actorSingleton: BackendActor | null = null;
 
-function processError(e: unknown): never {
-  if (e && typeof e === "object" && "message" in e) {
-    throw new Error(extractAgentErrorMessage(`${e.message}`));
-  }
-  throw e;
-}
+export async function createActorWithConfig(): Promise<BackendActor> {
+  if (actorSingleton) return actorSingleton;
 
-async function maybeLoadMockBackend(): Promise<backendInterface | null> {
-  if (import.meta.env.VITE_USE_MOCK !== "true") {
-    return null;
-  }
+  const { canisterId, host } = await loadCanisterConfig();
 
-  try {
-    // If VITE_USE_MOCK is enabled, try to load a mock backend module *if it exists*.
-    // We use import.meta.glob so builds don't fail when the mock file is absent.
-    const mockModules = import.meta.glob("./mocks/backend.{ts,tsx,js,jsx}");
-
-    const path = Object.keys(mockModules)[0];
-    if (!path) return null;
-
-    const mod = (await mockModules[path]()) as {
-      mockBackend?: backendInterface;
-    };
-
-    return mod.mockBackend ?? null;
-  } catch {
-    return null;
-  }
-}
-
-export async function createActorWithConfig(
-  options?: CreateActorOptions,
-): Promise<backendInterface> {
-  // Attempt to load mock backend if enabled
-  const mock = await maybeLoadMockBackend();
-  if (mock) {
-    return mock;
-  }
-
-  const config = await loadConfig();
-  const resolvedOptions = options ?? {};
-  const agent = new HttpAgent({
-    ...resolvedOptions.agentOptions,
-    host: config.backend_host,
-  });
-  if (config.backend_host?.includes("localhost")) {
-    await agent.fetchRootKey().catch((err) => {
-      console.warn(
-        "Unable to fetch root key. Check to ensure that your local replica is running",
-      );
-      console.error(err);
-    });
-  }
-  const actorOptions = {
-    ...resolvedOptions,
-    agent: agent,
-    processError,
-  };
-
-  const storageClient = new StorageClient(
-    config.bucket_name,
-    config.storage_gateway_url,
-    config.backend_canister_id,
-    config.project_id,
-    agent,
-  );
-
-  const MOTOKO_DEDUPLICATION_SENTINEL = "!caf!";
-
-  const uploadFile = async (file: ExternalBlob): Promise<Uint8Array> => {
-    const { hash } = await storageClient.putFile(
-      await file.getBytes(),
-      file.onProgress,
+  if (!canisterId) {
+    throw new Error(
+      "CANISTER_ID_BACKEND is not configured. Cannot create actor.",
     );
-    return new TextEncoder().encode(MOTOKO_DEDUPLICATION_SENTINEL + hash);
-  };
+  }
 
-  const downloadFile = async (bytes: Uint8Array): Promise<ExternalBlob> => {
-    const hashWithPrefix = new TextDecoder().decode(new Uint8Array(bytes));
-    const hash = hashWithPrefix.substring(MOTOKO_DEDUPLICATION_SENTINEL.length);
-    const url = await storageClient.getDirectURL(hash);
-    return ExternalBlob.fromURL(url);
-  };
+  const agent = new HttpAgent({ host });
 
-  return createActor(
-    config.backend_canister_id,
-    uploadFile,
-    downloadFile,
-    actorOptions,
-  );
+  // Fetch root key on local replica (non-production)
+  if (
+    !host ||
+    host.includes("localhost") ||
+    host.includes("127.0.0.1")
+  ) {
+    try {
+      await agent.fetchRootKey();
+    } catch {
+      // ignore — may fail if already fetched
+    }
+  }
+
+  const actor = Actor.createActor<BackendActor>(() => backendIDL, {
+    agent,
+    canisterId,
+  });
+
+  actorSingleton = actor;
+  return actor;
 }

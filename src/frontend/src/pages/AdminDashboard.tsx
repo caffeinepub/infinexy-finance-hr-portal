@@ -42,7 +42,12 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { type EmployeeRecord, EmployeeStatus } from "../backend";
+import {
+  type EmployeeRecord,
+  EmployeeStatus,
+  denormalizeRecord,
+  normalizeRecord,
+} from "../config";
 import { useActor } from "../hooks/useActor";
 import {
   changePassword,
@@ -54,10 +59,234 @@ import {
 import { getFileURL } from "../lib/blobStorage";
 import { generateEmployeePDF } from "../lib/pdfGenerator";
 
-const STATUS_COLORS: Record<EmployeeStatus, string> = {
-  [EmployeeStatus.pending]: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  [EmployeeStatus.active]: "bg-green-100 text-green-800 border-green-300",
-  [EmployeeStatus.inactive]: "bg-red-100 text-red-800 border-red-300",
+async function loadImageAsDataURL(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function printAcceptanceLetter(
+  emp: EmployeeRecord,
+  acceptedDate: string,
+): Promise<void> {
+  const logoDataUrl = await loadImageAsDataURL(
+    "/assets/uploads/infinexy-solution-logo.jpeg",
+  );
+
+  const win = window.open("", "_blank", "width=900,height=700");
+  if (!win) {
+    alert("Please allow popups to print the acceptance letter.");
+    return;
+  }
+
+  const logoHtml = logoDataUrl
+    ? `<img src="${logoDataUrl}" style="height:60px;object-fit:contain;background:white;padding:6px 10px;border-radius:4px;" />`
+    : `<div style="font-size:22px;font-weight:900;color:white;letter-spacing:0.04em;">INFINEXY SOLUTION</div>`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Employment Terms & Performance Agreement - ${emp.fullName}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: 'Times New Roman', Times, serif; font-size: 13px; color: #1a1a1a; background: white; line-height: 1.6; }
+  @media print {
+    .no-print { display: none !important; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+  ul { padding-left: 0; list-style: none; }
+  ul li { margin-bottom: 8px; padding-left: 0; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div style="background:#1a2c6b;padding:0;">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px;">
+    <div style="display:flex;align-items:center;gap:16px;">
+      ${logoHtml}
+      <div>
+        <div style="font-size:22px;font-weight:900;color:white;letter-spacing:0.06em;font-family:Georgia,serif;">INFINEXY SOLUTION</div>
+        <div style="font-size:10px;color:#c9a84c;letter-spacing:0.08em;text-transform:uppercase;margin-top:2px;">Employment Terms &amp; Performance Agreement</div>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:#c9a84c;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px;">Human Resources Division</div>
+      <div style="font-size:10px;color:#ccd6f6;">infinexyfinance@gmail.com</div>
+    </div>
+  </div>
+  <div style="background:#c9a84c;height:3px;"></div>
+</div>
+
+<!-- Document Title Banner -->
+<div style="padding:14px 28px 10px;border-bottom:1px solid #d0d8f0;text-align:center;">
+  <div style="font-size:16px;font-weight:800;color:#1a2c6b;letter-spacing:0.1em;text-transform:uppercase;font-family:Georgia,serif;">EMPLOYMENT TERMS &amp; PERFORMANCE AGREEMENT</div>
+</div>
+
+<!-- Body -->
+<div style="padding:24px 36px;">
+
+  <!-- Employee Details -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px;">
+    <tr>
+      <td style="padding:5px 0;font-weight:700;width:160px;color:#1a2c6b;">Date:</td>
+      <td style="padding:5px 0;">March 29, 2026</td>
+      <td style="padding:5px 0;font-weight:700;width:160px;color:#1a2c6b;">Employee ID:</td>
+      <td style="padding:5px 0;">${emp.id}</td>
+    </tr>
+    <tr>
+      <td style="padding:5px 0;font-weight:700;color:#1a2c6b;">Employee Name:</td>
+      <td style="padding:5px 0;">${emp.fullName}</td>
+      <td style="padding:5px 0;font-weight:700;color:#1a2c6b;">Position:</td>
+      <td style="padding:5px 0;">${emp.postApplying || "&mdash;"}</td>
+    </tr>
+  </table>
+  <div style="border-bottom:1px solid #d0d8f0;margin-bottom:16px;"></div>
+
+  <!-- Subject -->
+  <p style="margin-bottom:14px;font-size:13px;"><strong>Subject:</strong> Formal Acceptance of Performance and Confidentiality Terms</p>
+
+  <p style="margin-bottom:16px;font-size:13px;">
+    This document serves as a binding agreement between <strong>Infinexy Solution</strong> (the "Company") and
+    <strong>${emp.fullName}</strong> (the "Employee"). By signing this letter, the Employee acknowledges and agrees to the
+    following specific terms and conditions governing their employment:
+  </p>
+
+  <!-- Section 1 -->
+  <div style="margin-bottom:16px;">
+    <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:7px 14px;font-weight:700;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;border-left:4px solid #c9a84c;margin-bottom:10px;">
+      1. Performance-Linked Salary Structure
+    </div>
+    <p style="margin-bottom:8px;font-size:13px;padding:0 4px;">
+      The Employee understands that their role is target-driven. The monthly salary is contingent upon the successful
+      completion of the assigned Loan Disbursement Targets.
+    </p>
+    <ul style="margin-left:20px;font-size:13px;padding:0 4px;">
+      <li style="margin-bottom:7px;">
+        <strong>Target Achievement:</strong> The Employee is required to achieve 100% of the monthly loan disbursement
+        target as set by the management.
+      </li>
+      <li style="margin-bottom:7px;">
+        <strong>Penalty for Non-Completion:</strong> In the event the Employee fails to achieve the assigned monthly loan
+        target, the Employee shall be entitled to receive only <strong>20% (twenty percent)</strong> of their total gross
+        monthly salary. The remaining 80% is considered performance-contingent and will be forfeited for that month.
+      </li>
+    </ul>
+  </div>
+
+  <!-- Section 2 -->
+  <div style="margin-bottom:16px;">
+    <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:7px 14px;font-weight:700;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;border-left:4px solid #c9a84c;margin-bottom:10px;">
+      2. Data Security and Confidentiality
+    </div>
+    <p style="margin-bottom:8px;font-size:13px;padding:0 4px;">
+      The Employee will have access to sensitive company data, including client financial records, lead databases,
+      and proprietary lending algorithms.
+    </p>
+    <ul style="margin-left:20px;font-size:13px;padding:0 4px;">
+      <li style="margin-bottom:7px;">
+        <strong>Non-Disclosure:</strong> The Employee agrees to maintain strict confidentiality. No data shall be copied,
+        transferred, or shared with third parties without written authorization.
+      </li>
+      <li style="margin-bottom:7px;">
+        <strong>Liability for Data Theft:</strong> If the Employee is found responsible for any data theft, unauthorized
+        data transfer, or breach of company digital security, they shall be legally bound to pay a penalty of
+        <strong>Rs. 1,00,000 (One Lakh Rupees)</strong> to the Company.
+      </li>
+      <li style="margin-bottom:7px;">
+        <strong>Legal Action:</strong> This penalty is independent of any further criminal or civil legal proceedings
+        the Company may initiate to recover damages.
+      </li>
+    </ul>
+  </div>
+
+  <!-- Section 3 -->
+  <div style="margin-bottom:20px;">
+    <div style="background:linear-gradient(90deg,#1a2c6b 0%,#2a3f8f 100%);color:white;padding:7px 14px;font-weight:700;font-size:12px;letter-spacing:0.06em;text-transform:uppercase;border-left:4px solid #c9a84c;margin-bottom:10px;">
+      3. General Terms &amp; Conditions
+    </div>
+    <p style="font-size:13px;padding:0 4px;">
+      The Employee agrees to abide by all other standard operating procedures, codes of conduct, and internal policies
+      of the Company as updated from time to time.
+    </p>
+  </div>
+
+  <!-- Declaration & Acceptance -->
+  <div style="border:2px solid #c9a84c;border-radius:4px;padding:16px 18px;background:#fffdf5;margin-bottom:20px;">
+    <div style="font-weight:800;color:#1a2c6b;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;font-family:Georgia,serif;">
+      DECLARATION &amp; ACCEPTANCE
+    </div>
+    <p style="font-size:13px;margin-bottom:14px;">
+      I, <strong>${emp.fullName}</strong>, have read and fully understood the terms mentioned above. I voluntarily agree
+      to the performance-linked salary structure (including the 20% payout clause for missed targets) and the financial
+      liability of Rs. 1,00,000 in the event of a data breach or theft.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+      <tr>
+        <td style="width:45%;padding-right:24px;vertical-align:bottom;">
+          <div style="border-bottom:1px solid #555;margin-bottom:5px;height:36px;"></div>
+          <div style="font-size:11px;color:#555;">Employee Signature</div>
+        </td>
+        <td style="width:10%;"></td>
+        <td style="width:45%;vertical-align:bottom;">
+          <div style="border-bottom:1px solid #555;margin-bottom:5px;height:36px;"></div>
+          <div style="font-size:11px;color:#555;">Date</div>
+        </td>
+      </tr>
+      <tr><td colspan="3" style="height:18px;"></td></tr>
+      <tr>
+        <td style="width:45%;padding-right:24px;vertical-align:bottom;">
+          <div style="border-bottom:1px solid #555;margin-bottom:5px;height:36px;"></div>
+          <div style="font-size:11px;color:#555;">Witness Signature</div>
+        </td>
+        <td></td>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Accepted Notice -->
+  <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:4px;padding:10px 14px;text-align:center;font-size:12px;font-weight:700;color:#166534;margin-bottom:20px;">
+    &#10003; Employee accepted this agreement on: ${acceptedDate}
+  </div>
+
+  <!-- Footer -->
+  <div style="border-top:2px solid #1a2c6b;padding-top:10px;display:flex;justify-content:space-between;align-items:center;">
+    <div style="font-size:9px;color:#888;">This is a confidential HR document. Unauthorized disclosure is prohibited.</div>
+    <div style="font-size:9px;color:#888;">Infinexy Solution &copy; ${new Date().getFullYear()}</div>
+  </div>
+
+</div>
+
+<div class="no-print" style="text-align:center;padding:20px;background:#f7f9ff;border-top:1px solid #d0d8f0;">
+  <button onclick="window.print()" style="background:#1a2c6b;color:white;padding:10px 32px;border:none;border-radius:4px;font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0.04em;">Print Letter</button>
+</div>
+
+</body>
+</html>`;
+
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => {
+    win.print();
+  }, 800);
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  active: "bg-green-100 text-green-800 border-green-300",
+  inactive: "bg-red-100 text-red-800 border-red-300",
 };
 
 export default function AdminDashboard() {
@@ -102,14 +331,14 @@ export default function AdminDashboard() {
     queryKey: ["employees"],
     queryFn: async () => {
       if (!actor) return [];
-      const [records, letters] = await Promise.all([
+      const [rawRecords, letters] = await Promise.all([
         actor.getAllEmployeeRecords(),
-        (actor as any).getAllAcceptanceLetters(),
+        actor.getAllAcceptanceLetters(),
       ]);
       setAcceptanceMap(Object.fromEntries(letters));
-      return records;
+      return rawRecords.map(normalizeRecord);
     },
-    enabled: !!actor,
+    enabled: isAuthenticated(),
     refetchInterval: 15000,
     refetchOnWindowFocus: true,
     staleTime: 0,
@@ -131,7 +360,11 @@ export default function AdminDashboard() {
   const updateMutation = useMutation({
     mutationFn: async (emp: EmployeeRecord) => {
       if (!actor) throw new Error("No actor");
-      return actor.updateEmployeeRecord(emp.id, emp);
+      const raw = await actor.updateEmployeeRecord(
+        emp.id,
+        denormalizeRecord(emp),
+      );
+      return normalizeRecord(raw);
     },
     onSuccess: (_, emp) => {
       saveEmployeeExtras(emp.id, editExtras);
@@ -605,7 +838,12 @@ export default function AdminDashboard() {
                         <td className="px-4 py-3">
                           <Button
                             size="sm"
-                            onClick={() => setLetterEmployee(emp)}
+                            onClick={() =>
+                              printAcceptanceLetter(
+                                emp,
+                                acceptanceMap[emp.id] || "",
+                              )
+                            }
                             style={{ background: "#1a2c6b", color: "white" }}
                             data-ocid={`letters.primary_button.${i + 1}`}
                           >
@@ -1090,7 +1328,13 @@ export default function AdminDashboard() {
           )}
           <DialogFooter>
             <Button
-              onClick={() => window.print()}
+              onClick={() =>
+                letterEmployee &&
+                printAcceptanceLetter(
+                  letterEmployee,
+                  acceptanceMap[letterEmployee.id] || "",
+                )
+              }
               style={{ background: "#1a2c6b", color: "white" }}
               data-ocid="acceptance.primary_button"
             >

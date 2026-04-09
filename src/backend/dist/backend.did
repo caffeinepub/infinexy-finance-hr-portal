@@ -1,0 +1,72 @@
+type Time = int;
+type EmployeeStatus = 
+ variant {
+   active;
+   inactive;
+   pending;
+ };
+type EmployeeRecord = 
+ record {
+   aadhaarCardFileId: opt text;
+   aadhaarNumber: text;
+   accountHolderName: text;
+   accountNumber: text;
+   alternatePhone: opt text;
+   bachelorFileId: opt text;
+   bankName: text;
+   cancelledChequeFileId: opt text;
+   class10CertFileId: opt text;
+   class12CertFileId: opt text;
+   dateOfBirth: text;
+   declarationDate: text;
+   diplomaFileId: opt text;
+   educationLevel: text;
+   email: text;
+   experienceCertificateFileId: opt text;
+   experienceDetails: opt text;
+   fullAddress: text;
+   fullName: text;
+   gender: text;
+   hasExperience: bool;
+   id: text;
+   ifscCode: text;
+   leavingLetterFileId: opt text;
+   masterFileId: opt text;
+   panCardFileId: opt text;
+   panNumber: text;
+   passportPhotoFileId: opt text;
+   phone: text;
+   postApplying: text;
+   salarySlip1FileId: opt text;
+   salarySlip2FileId: opt text;
+   salarySlip3FileId: opt text;
+   signatureFileId: opt text;
+   status: EmployeeStatus;
+   submittedAt: Time;
+   typesOfCalling: vec text;
+   upiId: text;
+ };
+service : {
+  changeAdminPassword: (oldHash: text, newHash: text) -> (bool);
+  deleteEmployeeRecord: (id: text) -> ();
+  getAcceptanceLetter: (employeeId: text) -> (opt text) query;
+  getAllAcceptanceLetters: () -> (vec record {
+                                        text;
+                                        text;
+                                      }) query;
+  getAllEmployeeRecords: () -> (vec EmployeeRecord) query;
+  getDocumentBlob: (id: text) -> (opt blob) query;
+  getEmployeeCountByStatus: (status: text) -> (nat);
+  getEmployeeRecord: (id: text) -> (opt EmployeeRecord) query;
+  getEmployeeRecordsByIdPattern: (pattern: text) -> (vec EmployeeRecord);
+  getEmployeeRecordsByStatus: (status: EmployeeStatus) ->
+   (vec EmployeeRecord) query;
+  getEmployeeRecordsByStatusSorted: (status: EmployeeStatus) ->
+   (vec EmployeeRecord) query;
+  recordAcceptanceLetter: (employeeId: text, acceptedDate: text) -> ();
+  storeDocument: (data: blob, fileName: text) -> (text);
+  submitEmployeeRecord: ("record": EmployeeRecord) -> (text);
+  updateEmployeeRecord: (id: text, updatedRecord: EmployeeRecord) ->
+   (EmployeeRecord);
+  verifyAdminLogin: (username: text, passwordHash: text) -> (bool) query;
+}

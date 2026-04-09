@@ -1,0 +1,138 @@
+// Version: 3.0.0
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type EmployeeRecord__292198537 =
+  {
+    aadhaarCardFileId : ?Text;
+    aadhaarNumber : Text;
+    accountHolderName : Text;
+    accountNumber : Text;
+    alternatePhone : ?Text;
+    bachelorFileId : ?Text;
+    bankName : Text;
+    cancelledChequeFileId : ?Text;
+    class10CertFileId : ?Text;
+    class12CertFileId : ?Text;
+    dateOfBirth : Text;
+    declarationDate : Text;
+    diplomaFileId : ?Text;
+    educationLevel : Text;
+    email : Text;
+    experienceCertificateFileId : ?Text;
+    experienceDetails : ?Text;
+    fullAddress : Text;
+    fullName : Text;
+    gender : Text;
+    hasExperience : Bool;
+    id : Text;
+    ifscCode : Text;
+    leavingLetterFileId : ?Text;
+    masterFileId : ?Text;
+    panCardFileId : ?Text;
+    panNumber : Text;
+    passportPhotoFileId : ?Text;
+    phone : Text;
+    postApplying : Text;
+    salarySlip1FileId : ?Text;
+    salarySlip2FileId : ?Text;
+    salarySlip3FileId : ?Text;
+    signatureFileId : ?Text;
+    status : EmployeeStatus__762492300;
+    submittedAt : Time__900049286;
+    typesOfCalling : [Text];
+    upiId : Text
+  };
+type EmployeeStatus__762492300 = {#active; #inactive; #pending};
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+actor ({
+  stable acceptanceLetters :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  in var adminPasswordHash : Text;
+  in var adminUsername : Text;
+  stable var documentIdCounter : Nat;
+  stable documentNames :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable documentStore :
+    {var root : Node__46230540<Text, Blob>; var size : Nat__490723111};
+  stable employeeRecords :
+    {
+      var root : Node__46230540<Text, EmployeeRecord__292198537>;
+      var size : Nat__490723111
+    };
+  in var stableAcceptanceLetters : [(Text, Text)];
+  in var stableDocumentIdCounter : Nat;
+  in var stableDocumentNames : [(Text, Text)];
+  in var stableDocumentStore : [(Text, Blob)];
+  in var stableEmployeeRecords :
+    [(Text,
+      {
+        aadhaarCardFileId : ?Text;
+        aadhaarNumber : Text;
+        accountHolderName : Text;
+        accountNumber : Text;
+        alternatePhone : ?Text;
+        bachelorFileId : ?Text;
+        bankName : Text;
+        cancelledChequeFileId : ?Text;
+        class10CertFileId : ?Text;
+        class12CertFileId : ?Text;
+        dateOfBirth : Text;
+        declarationDate : Text;
+        diplomaFileId : ?Text;
+        educationLevel : Text;
+        email : Text;
+        experienceCertificateFileId : ?Text;
+        experienceDetails : ?Text;
+        fullAddress : Text;
+        fullName : Text;
+        gender : Text;
+        hasExperience : Bool;
+        id : Text;
+        ifscCode : Text;
+        leavingLetterFileId : ?Text;
+        masterFileId : ?Text;
+        panCardFileId : ?Text;
+        panNumber : Text;
+        passportPhotoFileId : ?Text;
+        phone : Text;
+        postApplying : Text;
+        salarySlip1FileId : ?Text;
+        salarySlip2FileId : ?Text;
+        salarySlip3FileId : ?Text;
+        signatureFileId : ?Text;
+        status : {#active; #inactive; #pending};
+        submittedAt : Int;
+        typesOfCalling : [Text];
+        upiId : Text
+      })]
+}, {
+  stable acceptanceLetters :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable var adminPasswordHash : Text;
+  stable var adminUsername : Text;
+  stable var documentIdCounter : Nat;
+  stable documentNames :
+    {var root : Node__46230540<Text, Text>; var size : Nat__490723111};
+  stable documentStore :
+    {var root : Node__46230540<Text, Blob>; var size : Nat__490723111};
+  stable employeeRecords :
+    {
+      var root : Node__46230540<Text, EmployeeRecord__292198537>;
+      var size : Nat__490723111
+    };
+  stable var stableAcceptanceLetters : [(Text, Text)];
+  stable var stableDocumentIdCounter : Nat;
+  stable var stableDocumentNames : [(Text, Text)];
+  stable var stableDocumentStore : [(Text, Blob)];
+  stable var stableEmployeeRecords : [(Text, EmployeeRecord__292198537)]
+}) ;

@@ -1,13 +1,13 @@
-import type { backendInterface } from "../backend";
+import type { BackendActor } from "../config";
 import { createActorWithConfig } from "../config";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const CHUNK_SIZE = 900 * 1024; // 900KB chunks (safely under 2MB ICP ingress limit)
 const CHUNKS_PREFIX = "chunks:";
 
-let actorCache: backendInterface | null = null;
+let actorCache: BackendActor | null = null;
 
-async function getActor(): Promise<backendInterface> {
+async function getActor(): Promise<BackendActor> {
   if (actorCache) return actorCache;
   actorCache = await createActorWithConfig();
   return actorCache;
@@ -66,8 +66,10 @@ export async function getFileURL(fileId: string): Promise<string> {
     const chunkBlobs = await Promise.all(
       chunkIds.map(async (id) => {
         const result = await actor.getDocumentBlob(id);
-        if (!result) throw new Error(`Chunk ${id} not found`);
-        const bytes = result as unknown as Uint8Array;
+        // Candid optional returns [] or [value]
+        if (!result || result.length === 0)
+          throw new Error(`Chunk ${id} not found`);
+        const bytes = result[0] as Uint8Array;
         const copy = new Uint8Array(bytes.length);
         copy.set(bytes);
         return copy;
@@ -96,8 +98,9 @@ export async function getFileURL(fileId: string): Promise<string> {
 
   // Direct canister doc_X ID (single chunk or legacy)
   const result = await actor.getDocumentBlob(fileId);
-  if (!result) throw new Error("Document not found");
-  const bytes = result as unknown as Uint8Array;
+  // Candid optional returns [] or [value]
+  if (!result || result.length === 0) throw new Error("Document not found");
+  const bytes = result[0] as Uint8Array;
   const copy = new Uint8Array(bytes.length);
   copy.set(bytes);
   const blob = new Blob([copy.buffer]);

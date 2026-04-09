@@ -1,4 +1,4 @@
-import type { EmployeeRecord } from "../backend.d";
+import type { EmployeeRecord } from "../config";
 import { getEmployeeExtras } from "./adminAuth";
 import { getFileURL } from "./blobStorage";
 

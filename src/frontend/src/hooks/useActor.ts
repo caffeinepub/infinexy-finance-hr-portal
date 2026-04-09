@@ -1,59 +1,31 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import type { backendInterface } from "../backend";
-import { createActorWithConfig } from "../config";
-import { getSecretParameter } from "../utils/urlParams";
-import { useInternetIdentity } from "./useInternetIdentity";
+/**
+ * hooks/useActor.ts
+ *
+ * Provides the backend actor to React components via React Query.
+ * The actor is initialized once and reused across all components.
+ * No Internet Identity — actor is always anonymous (admin auth is
+ * handled via canister method verifyAdminLogin with username/password).
+ */
 
-const ACTOR_QUERY_KEY = "actor";
-export function useActor() {
-  const { identity } = useInternetIdentity();
-  const queryClient = useQueryClient();
-  const actorQuery = useQuery<backendInterface>({
-    queryKey: [ACTOR_QUERY_KEY, identity?.getPrincipal().toString()],
-    queryFn: async () => {
-      const isAuthenticated = !!identity;
+import { useQuery } from "@tanstack/react-query";
+import { type BackendActor, createActorWithConfig } from "../config";
 
-      if (!isAuthenticated) {
-        // Return anonymous actor if not authenticated
-        return await createActorWithConfig();
-      }
-
-      const actorOptions = {
-        agentOptions: {
-          identity,
-        },
-      };
-
-      const actor = await createActorWithConfig(actorOptions);
-      const adminToken = getSecretParameter("caffeineAdminToken") || "";
-      await actor._initializeAccessControlWithSecret(adminToken);
-      return actor;
-    },
-    // Only refetch when identity changes
+export function useActor(): {
+  actor: BackendActor | null;
+  isFetching: boolean;
+} {
+  const { data, isFetching } = useQuery<BackendActor>({
+    queryKey: ["backend-actor"],
+    queryFn: () => createActorWithConfig(),
+    // Actor never changes — create once and cache forever
     staleTime: Number.POSITIVE_INFINITY,
-    // This will cause the actor to be recreated when the identity changes
-    enabled: true,
+    gcTime: Number.POSITIVE_INFINITY,
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  // When the actor changes, invalidate dependent queries
-  useEffect(() => {
-    if (actorQuery.data) {
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-      queryClient.refetchQueries({
-        predicate: (query) => {
-          return !query.queryKey.includes(ACTOR_QUERY_KEY);
-        },
-      });
-    }
-  }, [actorQuery.data, queryClient]);
-
   return {
-    actor: actorQuery.data || null,
-    isFetching: actorQuery.isFetching,
+    actor: data ?? null,
+    isFetching,
   };
 }

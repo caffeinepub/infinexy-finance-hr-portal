@@ -54,44 +54,12 @@ export type EmployeeStatus = { 'active' : null } |
   { 'pending' : null } |
   { 'inactive' : null };
 export type Time = bigint;
-export interface UserProfile { 'name' : string }
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
-export interface _CaffeineStorageCreateCertificateResult {
-  'method' : string,
-  'blob_hash' : string,
-}
-export interface _CaffeineStorageRefillInformation {
-  'proposed_top_up_amount' : [] | [bigint],
-}
-export interface _CaffeineStorageRefillResult {
-  'success' : [] | [boolean],
-  'topped_up_amount' : [] | [bigint],
-}
 export interface _SERVICE {
-  '_caffeineStorageBlobIsLive' : ActorMethod<[Uint8Array], boolean>,
-  '_caffeineStorageBlobsToDelete' : ActorMethod<[], Array<Uint8Array>>,
-  '_caffeineStorageConfirmBlobDeletion' : ActorMethod<
-    [Array<Uint8Array>],
-    undefined
-  >,
-  '_caffeineStorageCreateCertificate' : ActorMethod<
-    [string],
-    _CaffeineStorageCreateCertificateResult
-  >,
-  '_caffeineStorageRefillCashier' : ActorMethod<
-    [[] | [_CaffeineStorageRefillInformation]],
-    _CaffeineStorageRefillResult
-  >,
-  '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'changeAdminPassword' : ActorMethod<[string, string], boolean>,
   'deleteEmployeeRecord' : ActorMethod<[string], undefined>,
+  'getAcceptanceLetter' : ActorMethod<[string], [] | [string]>,
+  'getAllAcceptanceLetters' : ActorMethod<[], Array<[string, string]>>,
   'getAllEmployeeRecords' : ActorMethod<[], Array<EmployeeRecord>>,
-  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDocumentBlob' : ActorMethod<[string], [] | [Uint8Array]>,
   'getEmployeeCountByStatus' : ActorMethod<[string], bigint>,
   'getEmployeeRecord' : ActorMethod<[string], [] | [EmployeeRecord]>,
@@ -107,18 +75,13 @@ export interface _SERVICE {
     [EmployeeStatus],
     Array<EmployeeRecord>
   >,
-  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'isCallerAdmin' : ActorMethod<[], boolean>,
-  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'recordAcceptanceLetter' : ActorMethod<[string, string], undefined>,
   'storeDocument' : ActorMethod<[Uint8Array, string], string>,
   'submitEmployeeRecord' : ActorMethod<[EmployeeRecord], string>,
   'updateEmployeeRecord' : ActorMethod<
     [string, EmployeeRecord],
     EmployeeRecord
   >,
-  'recordAcceptanceLetter' : ActorMethod<[string, string], undefined>,
-  'getAcceptanceLetter' : ActorMethod<[string], [] | [string]>,
-  'getAllAcceptanceLetters' : ActorMethod<[], Array<[string, string]>>,
   'verifyAdminLogin' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;

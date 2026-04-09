@@ -8,9 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import { EmployeeStatus } from "../backend";
 import FileUpload from "../components/FileUpload";
 import SignaturePad from "../components/SignaturePad";
+import { EmployeeStatus, statusToCandid } from "../config";
 import { useActor } from "../hooks/useActor";
 import { uploadDataURL } from "../lib/blobStorage";
 
@@ -258,6 +258,7 @@ export default function InductionForm() {
       return;
     }
     setSubmitting(true);
+    const opt = (val: string | undefined): [] | [string] => (val ? [val] : []);
     try {
       await actor.submitEmployeeRecord({
         id: employeeId,
@@ -265,38 +266,38 @@ export default function InductionForm() {
         dateOfBirth: fd.dateOfBirth,
         gender: fd.gender,
         phone: fd.phone,
-        alternatePhone: fd.alternatePhone || undefined,
+        alternatePhone: opt(fd.alternatePhone || undefined),
         email: fd.email,
         fullAddress: fd.fullAddress,
         postApplying: fd.postApplying.join(", "),
         typesOfCalling: fd.typesOfCalling,
         hasExperience: fd.hasExperience,
-        experienceDetails: fd.experienceDetails || undefined,
-        experienceCertificateFileId: fd.expCertFileId || undefined,
-        leavingLetterFileId: fd.leavingLetterFileId || undefined,
-        salarySlip1FileId: fd.slip1FileId || undefined,
-        salarySlip2FileId: fd.slip2FileId || undefined,
-        salarySlip3FileId: fd.slip3FileId || undefined,
+        experienceDetails: opt(fd.experienceDetails || undefined),
+        experienceCertificateFileId: opt(fd.expCertFileId || undefined),
+        leavingLetterFileId: opt(fd.leavingLetterFileId || undefined),
+        salarySlip1FileId: opt(fd.slip1FileId || undefined),
+        salarySlip2FileId: opt(fd.slip2FileId || undefined),
+        salarySlip3FileId: opt(fd.slip3FileId || undefined),
         educationLevel: fd.educationLevel,
-        class10CertFileId: fd.class10FileId || undefined,
-        class12CertFileId: fd.class12FileId || undefined,
-        diplomaFileId: fd.diplomaFileId || undefined,
-        bachelorFileId: fd.bachelorFileId || undefined,
-        masterFileId: fd.masterFileId || undefined,
+        class10CertFileId: opt(fd.class10FileId || undefined),
+        class12CertFileId: opt(fd.class12FileId || undefined),
+        diplomaFileId: opt(fd.diplomaFileId || undefined),
+        bachelorFileId: opt(fd.bachelorFileId || undefined),
+        masterFileId: opt(fd.masterFileId || undefined),
         bankName: fd.bankName,
         accountHolderName: fd.accountHolderName,
         accountNumber: fd.accountNumber,
         ifscCode: fd.ifscCode,
         upiId: fd.upiId || "",
-        cancelledChequeFileId: fd.chequeFileId || undefined,
+        cancelledChequeFileId: opt(fd.chequeFileId || undefined),
         aadhaarNumber: fd.aadhaarNumber,
         panNumber: fd.panNumber.toUpperCase(),
-        aadhaarCardFileId: fd.aadhaarCardFileId || undefined,
-        panCardFileId: fd.panCardFileId || undefined,
-        passportPhotoFileId: fd.passportPhotoFileId || undefined,
+        aadhaarCardFileId: opt(fd.aadhaarCardFileId || undefined),
+        panCardFileId: opt(fd.panCardFileId || undefined),
+        passportPhotoFileId: opt(fd.passportPhotoFileId || undefined),
         declarationDate: fd.declarationDate,
-        signatureFileId: fd.signatureFileId || undefined,
-        status: EmployeeStatus.pending,
+        signatureFileId: opt(fd.signatureFileId || undefined),
+        status: statusToCandid(EmployeeStatus.pending),
         submittedAt: BigInt(Date.now()) * 1000000n,
       });
     } catch (submitErr) {
